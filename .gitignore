@@ -1,0 +1,16 @@
+# Self
+bin/
+packages/
+release/
+test/bin/
+vendor/
+dist/
+.idea/
+
+# Cache
+*~
+*.un~
+*.swp
+latest_log
+log/
+
