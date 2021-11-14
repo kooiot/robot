@@ -1,9 +1,14 @@
 package main
 
 import (
-	"github.com/kooiot/robot/pkg/net/server"
+	"math/rand"
+	"time"
+
+	"github.com/kooiot/robot/cmd/server/sub"
 )
 
 func main() {
-	server.NewServer()
+	rand.Seed(time.Now().UnixNano())
+
+	sub.Execute()
 }

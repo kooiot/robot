@@ -7,14 +7,21 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"strconv"
 
 	"github.com/Allenxuxu/gev/plugins/protobuf"
+	"github.com/kooiot/robot/client/config"
 	pb "github.com/kooiot/robot/pkg/net/proto"
 	"google.golang.org/protobuf/proto"
 )
 
-func NewClient() {
-	conn, e := net.Dial("tcp", ":1833")
+type Client struct {
+	cfg *config.ClientConf
+}
+
+func (c *Client) Run() error {
+	addr := c.cfg.Common.Addr + ":" + strconv.Itoa(c.cfg.Common.Port)
+	conn, e := net.Dial("tcp", addr)
 	if e != nil {
 		log.Fatal(e)
 	}
@@ -61,4 +68,11 @@ func NewClient() {
 			panic(err)
 		}
 	}
+}
+
+func NewClient(cfg *config.ClientConf) *Client {
+	cli := new(Client)
+	cli.cfg = cfg
+
+	return cli
 }

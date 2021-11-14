@@ -1,17 +1,19 @@
 package server
 
 import (
-	"flag"
 	"log"
 	"strconv"
 
 	"github.com/Allenxuxu/gev"
 	"github.com/Allenxuxu/gev/plugins/protobuf"
 	pb "github.com/kooiot/robot/pkg/net/proto"
+	"github.com/kooiot/robot/server/config"
 	"google.golang.org/protobuf/proto"
 )
 
-type server struct{}
+type server struct {
+	server *gev.Server
+}
 
 func (s *server) OnConnect(c *gev.Connection) {
 	log.Println(" OnConnect ： ", c.PeerAddr())
@@ -44,24 +46,24 @@ func (s *server) OnClose(c *gev.Connection) {
 	log.Println("OnClose")
 }
 
-func NewServer() {
-	handler := new(server)
-	var port int
-	var loops int
+func (s *server) Run() error {
+	log.Println("server start")
+	s.server.Start()
+	return nil
+}
 
-	flag.IntVar(&port, "port", 1833, "server port")
-	flag.IntVar(&loops, "loops", -1, "num loops")
-	flag.Parse()
+func NewServer(cfg *config.ServerConf) *server {
+	handler := new(server)
 
 	s, err := gev.NewServer(handler,
 		gev.Network("tcp"),
-		gev.Address(":"+strconv.Itoa(port)),
-		gev.NumLoops(loops),
+		gev.Address(cfg.Common.Bind+":"+strconv.Itoa(cfg.Common.Port)),
+		gev.NumLoops(cfg.Common.Loops),
 		gev.CustomProtocol(&protobuf.Protocol{}))
 	if err != nil {
 		panic(err)
 	}
+	handler.server = s
 
-	log.Println("server start")
-	s.Start()
+	return handler
 }
