@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/Allenxuxu/ringbuffer"
+	"github.com/kooiot/robot/pkg/net/protocol"
 )
 
 type Connection struct {
@@ -16,8 +17,7 @@ type Connection struct {
 	Address   string
 	Connected bool
 
-	buffer   *ringbuffer.RingBuffer
-	protocol *Protocol
+	buffer *ringbuffer.RingBuffer
 }
 
 func (conn *Connection) OnOpen(f func()) {
@@ -77,7 +77,7 @@ func (conn *Connection) read() {
 
 		conn.buffer.WithData(buf[:num])
 
-		ctx, recvData := conn.protocol.UnPacket(conn.buffer)
+		ctx, recvData := protocol.UnPacketMessage(conn.buffer)
 		if ctx != nil || len(recvData) != 0 {
 			sendData := conn.onMessageCallback(ctx, recvData)
 			if sendData != nil {
@@ -87,12 +87,11 @@ func (conn *Connection) read() {
 	}
 }
 
-func NewConnection(address string, protocol *Protocol) *Connection {
+func NewConnection(address string) *Connection {
 	conn := &Connection{
 		Address:   address,
 		Connected: false,
 		buffer:    ringbuffer.New(0),
-		protocol:  protocol,
 	}
 
 	conn.OnOpen(func() {})

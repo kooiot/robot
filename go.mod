@@ -12,6 +12,6 @@ require (
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.9.0
+	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	go.uber.org/zap v1.19.1
-	google.golang.org/protobuf v1.27.1
 )

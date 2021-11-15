@@ -2,21 +2,21 @@ package client
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
 
 	"github.com/kooiot/robot/client/config"
-	pb "github.com/kooiot/robot/pkg/net/proto"
+	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/net/protocol"
 	"github.com/kooiot/robot/pkg/util/log"
-	"google.golang.org/protobuf/proto"
 )
 
 type Client struct {
-	cfg   *config.ClientConf
-	conn  *Connection
-	proto *Protocol
+	cfg  *config.ClientConf
+	conn *Connection
 }
 
 func (c *Client) Run() error {
@@ -42,8 +42,8 @@ func (c *Client) OnRun() {
 
 		switch rand.Int() % 2 {
 		case 0:
-			msg := &pb.Login{
-				ClientId: name,
+			msg := &msg.Login{
+				ClientID: name,
 				User:     "User",
 				Passwd:   "Passwd",
 				Hostname: "Hostname",
@@ -52,23 +52,23 @@ func (c *Client) OnRun() {
 			}
 			log.Info("Send login: %v", msg)
 
-			data, err := proto.Marshal(msg)
+			data, err := json.Marshal(msg)
 			if err != nil {
 				panic(err)
 			}
-			buffer = c.proto.Packet("login", data)
+			buffer = protocol.PackMessage("login", data)
 		case 1:
-			msg := &pb.Logout{
-				ClientId: name,
-				Id:       "xxx",
+			msg := &msg.Logout{
+				ClientID: name,
+				ID:       0,
 			}
 			log.Info("Send logout: %v", msg)
 
-			data, err := proto.Marshal(msg)
+			data, err := json.Marshal(msg)
 			if err != nil {
 				panic(err)
 			}
-			buffer = c.proto.Packet("logout", data)
+			buffer = protocol.PackMessage("login", data)
 		}
 
 		_, err := c.conn.Write(buffer)
@@ -83,14 +83,14 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 
 	switch msgType {
 	case "login_resp":
-		msg := &pb.LoginResp{}
-		if err := proto.Unmarshal(data, msg); err != nil {
+		msg := msg.LoginResp{}
+		if err := json.Unmarshal(data, &msg); err != nil {
 			log.Info(err.Error())
 		}
 		log.Info("%s: %v", msgType, msg)
 	case "logout_resp":
-		msg := &pb.Response{}
-		if err := proto.Unmarshal(data, msg); err != nil {
+		msg := msg.Response{}
+		if err := json.Unmarshal(data, &msg); err != nil {
 			log.Info(err.Error())
 		}
 		log.Info("%s: %v", msgType, msg)
@@ -105,9 +105,8 @@ func NewClient(cfg *config.ClientConf) *Client {
 	cli := new(Client)
 	cli.cfg = cfg
 
-	cli.proto = NewProtocol()
 	addr := cfg.Common.Addr + ":" + strconv.Itoa(cfg.Common.Port)
-	conn := NewConnection(addr, cli.proto)
+	conn := NewConnection(addr)
 	cli.conn = conn
 
 	return cli

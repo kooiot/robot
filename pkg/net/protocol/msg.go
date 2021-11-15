@@ -1,4 +1,4 @@
-package client
+package protocol
 
 import (
 	"encoding/binary"
@@ -15,17 +15,23 @@ type Message struct {
 	Data    []byte
 }
 
-// Protocol protobuf
-type Protocol struct {
-}
+// PackMessage 按自定义协议打包数据
+func PackMessage(msgType string, data []byte) []byte {
+	typeLen := len(msgType)
+	length := len(data) + typeLen + 2
 
-// New 创建 protobuf Protocol
-func NewProtocol() *Protocol {
-	return &Protocol{}
+	ret := make([]byte, length+4)
+
+	binary.BigEndian.PutUint32(ret, uint32(length))
+	binary.BigEndian.PutUint16(ret[4:], uint16(typeLen))
+	copy(ret[6:], msgType)
+	copy(ret[6+typeLen:], data)
+
+	return ret
 }
 
 // UnPacket ...
-func (p *Protocol) UnPacket(buffer *ringbuffer.RingBuffer) (ctx interface{}, out []byte) {
+func UnPacketMessage(buffer *ringbuffer.RingBuffer) (ctx interface{}, out []byte) {
 	if buffer.Length() > 6 {
 		length := int(buffer.PeekUint32())
 		if buffer.Length() >= length+4 {
@@ -46,21 +52,5 @@ func (p *Protocol) UnPacket(buffer *ringbuffer.RingBuffer) (ctx interface{}, out
 			pbytes.Put(typeByte)
 		}
 	}
-
 	return
-}
-
-// Packet ...
-func (p *Protocol) Packet(msgType string, data []byte) []byte {
-	typeLen := len(msgType)
-	length := len(data) + typeLen + 2
-
-	ret := make([]byte, length+4)
-
-	binary.BigEndian.PutUint32(ret, uint32(length))
-	binary.BigEndian.PutUint16(ret[4:], uint16(typeLen))
-	copy(ret[6:], msgType)
-	copy(ret[6+typeLen:], data)
-
-	return ret
 }

@@ -1,7 +1,7 @@
 package xlog
 
 import (
-	"github.com/kooiot/iot-tun/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/log"
 )
 
 // Logger is not thread safety for operations on prefix
