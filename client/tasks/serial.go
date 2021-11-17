@@ -7,18 +7,11 @@ import (
 	"github.com/kooiot/robot/client/helper"
 	"github.com/kooiot/robot/client/port"
 	"github.com/kooiot/robot/client/port/serial"
+	"github.com/kooiot/robot/pkg/net/msg"
 )
 
-type SerialTaskConfig struct {
-	SrcPort    string `json:"src"`
-	DestPort   string `json:"dst"`
-	Baudrate   int    `json:"baudrate"`
-	Count      int    `json:"count"`
-	MaxMsgSize int    `json:"max_msg_size"`
-}
-
 type SerialTask struct {
-	config   SerialTaskConfig
+	config   msg.SerialTask
 	src_port *serial.SerialPort
 	src      *helper.PingPong
 	dst_port *serial.SerialPort
@@ -33,10 +26,10 @@ func (s *SerialTask) Stop() error {
 	return nil
 }
 
-func NewSerialTask(handler common.TaskHandler, config interface{}) *SerialTask {
-	data, _ := json.Marshal(config)
+func NewSerialTask(handler common.TaskHandler, option interface{}) common.Task {
+	data, _ := json.Marshal(option)
 
-	conf := SerialTaskConfig{}
+	conf := msg.SerialTask{}
 	json.Unmarshal(data, &conf)
 
 	src_stream := port.NewStream()

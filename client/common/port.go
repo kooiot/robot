@@ -8,7 +8,7 @@ type Port interface {
 
 // Port Handler 注册接口
 type PortHandler interface {
-	OnOpen(*Port, error)
+	OnOpen(Port, error)
 	OnClose(error)
 	OnMessage([]byte) error
 }

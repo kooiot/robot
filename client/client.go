@@ -9,14 +9,16 @@ import (
 	"strconv"
 
 	"github.com/kooiot/robot/client/config"
+	"github.com/kooiot/robot/client/tasks"
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/net/protocol"
 	"github.com/kooiot/robot/pkg/util/log"
 )
 
 type Client struct {
-	cfg  *config.ClientConf
-	conn *Connection
+	cfg    *config.ClientConf
+	conn   *Connection
+	runner *tasks.Runner
 }
 
 func (c *Client) Run() error {
@@ -94,6 +96,13 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 			log.Info(err.Error())
 		}
 		log.Info("%s: %v", msgType, msg)
+	case "task":
+		msg := msg.SerialTask{}
+		if err := json.Unmarshal(data, &msg); err != nil {
+			log.Info(err.Error())
+		}
+		log.Info("%s: %v", msgType, msg)
+		c.runner.Spawn(tasks.NewSerialTask, msg)
 	default:
 		log.Info("unknown msg type %s", msgType)
 	}
@@ -104,6 +113,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 func NewClient(cfg *config.ClientConf) *Client {
 	cli := new(Client)
 	cli.cfg = cfg
+	cli.runner = tasks.NewRunner()
 
 	addr := cfg.Common.Addr + ":" + strconv.Itoa(cfg.Common.Port)
 	conn := NewConnection(addr)

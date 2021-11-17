@@ -12,14 +12,14 @@ import (
 type StreamParser func(*ringbuffer.RingBuffer) ([]byte, error)
 
 type Stream struct {
-	port   *common.Port
+	port   common.Port
 	lock   sync.Mutex
 	buffer *ringbuffer.RingBuffer
 	// channel chan []byte
 	// parser StreamParser
 }
 
-func (s *Stream) OnOpen(port *common.Port, err error) {
+func (s *Stream) OnOpen(port common.Port, err error) {
 	if err != nil {
 		return
 	}

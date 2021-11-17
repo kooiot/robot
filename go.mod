@@ -7,6 +7,7 @@ require (
 	github.com/Allenxuxu/ringbuffer v0.0.11
 	github.com/Allenxuxu/toolkit v0.0.1
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/go-ping/ping v0.0.0-20211014180314-6e2b003bffdd
 	github.com/gobwas/pool v0.2.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
