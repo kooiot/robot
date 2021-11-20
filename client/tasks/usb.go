@@ -17,6 +17,10 @@ type USBTask struct {
 	config  msg.USBTask
 }
 
+func init() {
+	RegisterTask("usb", NewUSBTask)
+}
+
 func (s *USBTask) Start() error {
 	go s.run()
 	return nil
@@ -64,7 +68,7 @@ func (s *USBTask) run() {
 		}
 		reset.Set(0)
 	}
-	if len(s.config.Reset) > 0 {
+	if len(s.config.Power) > 0 {
 		// Test reset
 		power := hardware.NewNamedGPIO(s.config.Power)
 		power.Set(0)

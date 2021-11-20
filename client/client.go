@@ -97,12 +97,12 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 		}
 		log.Info("%s: %v", msgType, msg)
 	case "task":
-		msg := msg.SerialTask{}
+		msg := msg.Task{}
 		if err := json.Unmarshal(data, &msg); err != nil {
 			log.Info(err.Error())
 		}
 		log.Info("%s: %v", msgType, msg)
-		c.runner.Spawn(tasks.NewSerialTask, msg)
+		c.runner.Add(&msg, nil)
 	default:
 		log.Info("unknown msg type %s", msgType)
 	}

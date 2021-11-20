@@ -9,10 +9,12 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-ping/ping v0.0.0-20211014180314-6e2b003bffdd
 	github.com/gobwas/pool v0.2.1
+	github.com/google/uuid v1.2.0
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/npat-efault/crc16 v0.0.0-20161013170008-4128ccbe47c3
+	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.9.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07

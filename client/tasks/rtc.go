@@ -14,6 +14,10 @@ type RTCTask struct {
 	config  msg.RTCTask
 }
 
+func init() {
+	RegisterTask("task", NewRTCTask)
+}
+
 func (s *RTCTask) Start() error {
 	go s.run()
 	return nil
@@ -50,7 +54,7 @@ func (s *RTCTask) Stop() error {
 	return nil
 }
 
-func NewRTCTask(handler common.TaskHandler, option interface{}) *RTCTask {
+func NewRTCTask(handler common.TaskHandler, option interface{}) common.Task {
 	data, _ := json.Marshal(option)
 
 	conf := msg.RTCTask{}

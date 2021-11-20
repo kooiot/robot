@@ -8,8 +8,6 @@ type Task struct {
 }
 
 type BatchTask struct {
-	UUID  string `json:"uuid"`
-	Name  string `json:"name"`
 	Tasks []Task `json:"tasks"`
 }
 

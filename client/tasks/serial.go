@@ -18,6 +18,10 @@ type SerialTask struct {
 	dst      *helper.PingPong
 }
 
+func init() {
+	RegisterTask("serial", NewSerialTask)
+}
+
 func (s *SerialTask) Start() error {
 	return nil
 }
