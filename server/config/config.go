@@ -7,30 +7,30 @@ import (
 )
 
 type CommonConf struct {
-	Bind  string `yaml:"bind" json:"bind"`   // default 0.0.0.0
-	Port  int    `yaml:"port" json:"port"`   // default 7080
-	Loops int    `yaml:"loops" json:"loops"` // default is 0
+	Bind  string `mapstructure:"bind" json:"bind"`   // default 0.0.0.0
+	Port  int    `mapstructure:"port" json:"port"`   // default 7080
+	Loops int    `mapstructure:"loops" json:"loops"` // default is 0
 }
 
 type AutoMatch struct {
-	Key   string `yaml:"key" json:"key"`
-	Match string `yaml:"match" json:"match"`
+	Key   string `mapstructure:"key" json:"key"`
+	Match string `mapstructure:"match" json:"match"`
 }
 
 type AutoConfig struct {
-	Matches []AutoMatch `yaml:"matches" json:"matches"`
-	Config  string      `yaml:"config" json:"config"`
+	Matches []AutoMatch `mapstructure:"matches" json:"matches"`
+	Config  string      `mapstructure:"config" json:"config"`
 }
 
 type AutoTasks struct {
-	BasePath string       `yaml:"base_path" json:"base_path"`
-	Autos    []AutoConfig `yaml:"autos" json:"autos"`
+	Folder string       `mapstructure:"folder" json:"folder"`
+	Autos  []AutoConfig `mapstructure:"autos" json:"autos"`
 }
 
 type ServerConf struct {
-	Common CommonConf  `yaml: "common" json:"common"`
-	Log    log.LogConf `yaml:"log" json:"log"`
-	Tasks  AutoTasks   `yaml:"tasks" json:"tasks"`
+	Common CommonConf  `mapstructure:"common" json:"common"`
+	Log    log.LogConf `mapstructure:"log" json:"log"`
+	Tasks  AutoTasks   `mapstructure:"tasks" json:"tasks"`
 }
 
 // GetDefaultServerConf returns a client configuration with default values.

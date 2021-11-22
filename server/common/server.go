@@ -3,6 +3,7 @@ package common
 type Server interface {
 	Run() error
 	Init() error
+	ConfigDir() string
 }
 
 type ServerHandler interface {

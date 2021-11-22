@@ -7,19 +7,19 @@ import (
 )
 
 type CommonConf struct {
-	Addr     string `yaml:"addr" json:"addr"` // default 127.0.0.1
-	Port     int    `yaml:"port" json:"port"`
-	ClientID string `yaml:"client_id" json:"client_id"`
-	User     string `yaml:"user" json:"user"`
-	Password string `yaml:"password" json:"password"`
-	Hostname string `yaml:"hostname" json:"hostname"`
-	Hardware string `yaml:"hardware" json:"hardware"`
-	System   string `yaml:"system" json:"system"`
+	Addr     string `mapstructure:"addr" json:"addr"` // default 127.0.0.1
+	Port     int    `mapstructure:"port" json:"port"`
+	ClientID string `mapstructure:"client_id" json:"client_id"`
+	User     string `mapstructure:"user" json:"user"`
+	Password string `mapstructure:"password" json:"password"`
+	Hostname string `mapstructure:"hostname" json:"hostname"`
+	Hardware string `mapstructure:"hardware" json:"hardware"`
+	System   string `mapstructure:"system" json:"system"`
 }
 
 type ClientConf struct {
-	Common CommonConf
-	Log    log.LogConf
+	Common CommonConf  `mapstructure:"common" json:"common"`
+	Log    log.LogConf `mapstructure:"log" json:"log"`
 }
 
 // GetDefaultClientConf returns a client configuration with default values.

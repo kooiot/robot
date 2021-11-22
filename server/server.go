@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"path"
 	"strconv"
 	"time"
 
@@ -15,10 +16,11 @@ import (
 )
 
 type Server struct {
-	config   *config.ServerConf
-	server   *gev.Server
-	handlers []common.ServerHandler
-	clients  []common.Client
+	config      *config.ServerConf
+	config_file string
+	server      *gev.Server
+	handlers    []common.ServerHandler
+	clients     []common.Client
 }
 
 func (s *Server) OnConnect(c *gev.Connection) {
@@ -110,13 +112,21 @@ func (s *Server) Init() error {
 	return nil
 }
 
-func NewServer(cfg *config.ServerConf) *Server {
+func (s *Server) ConfigDir() string {
+	base_path := path.Dir(s.config_file)
+	return base_path
+}
+
+func NewServer(cfg *config.ServerConf, cfgFile string) *Server {
 	handler := &Server{
-		config: cfg,
+		config:      cfg,
+		config_file: cfgFile,
 	}
+	bind_addr := cfg.Common.Bind + ":" + strconv.Itoa(cfg.Common.Port)
+	log.Info("Bind on: %s", bind_addr)
 	s, err := gev.NewServer(handler,
 		gev.Network("tcp"),
-		gev.Address(cfg.Common.Bind+":"+strconv.Itoa(cfg.Common.Port)),
+		gev.Address(bind_addr),
 		gev.NumLoops(cfg.Common.Loops),
 		gev.CustomProtocol(protocol.New()))
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"strconv"
 
@@ -16,7 +15,7 @@ import (
 )
 
 type Client struct {
-	cfg    *config.ClientConf
+	config *config.ClientConf
 	conn   *Connection
 	runner *tasks.Runner
 }
@@ -36,18 +35,18 @@ func (c *Client) Run() error {
 
 func (c *Client) OnRun() {
 	var buffer []byte
+	login := false
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Text to send: ")
 		text, _ := reader.ReadString('\n')
 		name := text[:len(text)-1]
 
-		switch rand.Int() % 2 {
-		case 0:
+		if !login {
 			msg := &msg.Login{
-				ClientID: name,
-				User:     "User",
-				Passwd:   "Passwd",
+				ClientID: c.config.Common.ClientID,
+				User:     c.config.Common.User,
+				Passwd:   c.config.Common.Password,
 				Hostname: "Hostname",
 				Hardware: "ARM v7",
 				System:   "OpenWRT",
@@ -59,7 +58,7 @@ func (c *Client) OnRun() {
 				panic(err)
 			}
 			buffer = protocol.PackMessage("login", data)
-		case 1:
+		} else {
 			msg := &msg.Logout{
 				ClientID: name,
 				ID:       0,
@@ -112,7 +111,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 
 func NewClient(cfg *config.ClientConf) *Client {
 	cli := new(Client)
-	cli.cfg = cfg
+	cli.config = cfg
 	cli.runner = tasks.NewRunner()
 
 	addr := cfg.Common.Addr + ":" + strconv.Itoa(cfg.Common.Port)
