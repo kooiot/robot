@@ -27,12 +27,12 @@ func (s *Server) OnConnect(c *gev.Connection) {
 	log.Info("client connected: %s", c.PeerAddr())
 }
 
-func (s *Server) AfterLogin(c *gev.Connection, client *common.Client) {
+func (s *Server) AfterLogin(conn *gev.Connection, client *common.Client) {
 	time.Sleep(1 * time.Second)
 
-	log.Info("AfterLogin %s", c.PeerAddr())
+	log.Info("AfterLogin %s", conn.PeerAddr())
 	for _, h := range s.handlers {
-		h.AfterLogin(client)
+		h.AfterLogin(conn, client)
 	}
 }
 

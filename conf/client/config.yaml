@@ -1,7 +1,7 @@
 common:
-  client_id: "TRTX012155000100"
+  client_id: TRTX012155000100
   addr: 127.0.0.1
-  port: 7081
+  port: 7080
 
 log:
   link: latest_log

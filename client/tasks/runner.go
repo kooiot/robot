@@ -69,7 +69,7 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 func (r *Runner) Add(task *msg.Task, parent common.Task) error {
 	log.Info("%s: %v", task.Name, task.Option)
 	creator := gCreators[task.Name]
-	if creator != nil {
+	if creator == nil {
 		log.Info("unknown task %s", task.Name)
 		return errors.New("unknown task " + task.Name)
 	}

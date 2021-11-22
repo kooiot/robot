@@ -1,5 +1,7 @@
 package common
 
+import "github.com/Allenxuxu/gev"
+
 type Server interface {
 	Run() error
 	Init() error
@@ -8,6 +10,6 @@ type Server interface {
 
 type ServerHandler interface {
 	Init(s Server) error
-	AfterLogin(client *Client)
-	BeforeLogout(client *Client)
+	AfterLogin(conn *gev.Connection, client *Client)
+	BeforeLogout(conn *gev.Connection, client *Client)
 }

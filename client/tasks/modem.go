@@ -41,12 +41,15 @@ func (s *ModemTask) run() {
 
 	result := common.TaskResult{}
 	if stats.PacketsRecv > 0 {
+		opt := make(map[string]interface{})
+		j, _ := json.Marshal(s.config.USB)
+		json.Unmarshal(j, &opt)
 
 		t := msg.Task{}
 		t.UUID = uuid.NewV4().String()
 		t.Name = "usb"
 		t.Description = "Sub task from modem task"
-		t.Option = s.config.USB
+		t.Option = opt
 
 		s.handler.Spawn(NewUSBTask, &t, s)
 

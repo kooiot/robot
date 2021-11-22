@@ -3,19 +3,17 @@ tasks:
     name: serial
     desc: serial test com1 com2
     option:
-      -
-        src: /dev/ttyS1
-        dst: /dev/ttyS2
-        baudrate: 115200
-        count: 100
-        max_msg_size: 500
+      src: /dev/ttyS1
+      dst: /dev/ttyS2
+      baudrate: 115200
+      count: 100
+      max_msg_size: 500
   - 
-    name: serial
-    desc: serial test com3 com4
+    name: modem
+    desc: 4G modem
     option:
-      -
-        src: /dev/ttyS3
-        dst: /dev/ttyS4
-        baudrate: 115200
-        count: 100
-        max_msg_size: 500
+      ping_addr: 8.8.8.8
+      usb:
+        ids: "2c7c:0125"
+        reset: "pcie_reset"
+        power: "pcie_power"

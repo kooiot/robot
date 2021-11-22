@@ -1,14 +1,18 @@
 package tasks
 
 import (
+	"encoding/json"
 	"fmt"
 	"path"
 	"regexp"
 
+	"github.com/Allenxuxu/gev"
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/net/protocol"
 	"github.com/kooiot/robot/pkg/util/log"
 	"github.com/kooiot/robot/server/common"
 	"github.com/kooiot/robot/server/config"
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 )
 
@@ -70,11 +74,13 @@ func matchString(pat string, value string) bool {
 	m_list := m.FindStringSubmatch(value)
 	if m_list == nil {
 		log.Info("Not matched %s - %s", pat, value)
+	} else {
+		log.Info("Task matched %s - %s", pat, value)
 	}
 	return m_list != nil
 }
 
-func (h *TaskHandler) AfterLogin(client *common.Client) {
+func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 	for _, t := range h.tasks {
 		found := true
 		for _, m := range t.Matches {
@@ -96,13 +102,28 @@ func (h *TaskHandler) AfterLogin(client *common.Client) {
 			}
 		}
 		if found {
-			log.Info("Fire task to: %s", client.Info.ClientID)
-			// TODO: fire task
+			log.Info("Fire task to: %s - %v", client.Info.ClientID, t.Task)
+			opt := make(map[string]interface{})
+			j, _ := json.Marshal(t.Task)
+			json.Unmarshal(j, &opt)
+			task := msg.Task{
+				UUID:        uuid.NewV4().String(),
+				Name:        "batch",
+				Description: "Auto batch task",
+				Option:      opt,
+			}
+			data, err := json.Marshal(task)
+			if err != nil {
+				log.Error("failed encode resp: %s", err)
+				log.Error("resp: %#v", task)
+			} else {
+				conn.Send(protocol.PackMessage("task", data))
+			}
 		}
 	}
 }
 
-func (h *TaskHandler) BeforeLogout(client *common.Client) {
+func (h *TaskHandler) BeforeLogout(conn *gev.Connection, client *common.Client) {
 
 }
 
