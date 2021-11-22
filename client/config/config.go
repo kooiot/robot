@@ -32,6 +32,8 @@ func GetDefaultClientConf() ClientConf {
 			User:     "User",
 			Password: "Password",
 			Hostname: "Host",
+			Hardware: "UNKNOWN",
+			System:   "UNKNOWN",
 		},
 		Log: log.LogConf{
 			Link:  "latest_log",

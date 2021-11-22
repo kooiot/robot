@@ -1,0 +1,9 @@
+common:
+  addr: 127.0.0.1
+  port: 7080
+  client_id: TRTX012155000100
+
+log:
+  link: latest_log
+  dir: log
+  level: info

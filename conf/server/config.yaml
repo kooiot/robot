@@ -1,0 +1,25 @@
+common:
+  bind: 0.0.0.0
+  port: 7080
+  loops: 0
+
+log:
+  link: latest_log
+  dir: log
+  level: info
+
+tasks:
+  base_path: .
+  autos:
+    -
+      config: x1.yaml
+      matches:
+        - 
+          key: client_id
+          match: TRTX01*
+    -
+      config: k1.yaml
+      matches:
+        - 
+          key: client_id
+          match: TRTK01*

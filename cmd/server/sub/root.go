@@ -68,7 +68,7 @@ func Execute() {
 }
 
 func runServer(cfgFilePath string) error {
-	cfg, err := config.ParseClientConfig(cfgFilePath)
+	cfg, err := config.ParseServerConfig(cfgFilePath)
 	if err != nil {
 		return err
 	}
@@ -79,6 +79,12 @@ func startService(cfg config.ServerConf, cfgFile string) (err error) {
 	log.InitLog(cfg.Log)
 
 	svr := server.NewServer(&cfg)
+
+	err = svr.Init()
+	if err != nil {
+		return
+	}
+
 	err = svr.Run()
 
 	return

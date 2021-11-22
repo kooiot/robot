@@ -7,18 +7,34 @@ import (
 )
 
 type CommonConf struct {
-	Bind  string `yaml:"bind" json:"bind"` // default 0.0.0.0
-	Port  int    `yaml:"port" json:"port"`
-	Loops int    `yaml:"loops" json:"loops"`
+	Bind  string `yaml:"bind" json:"bind"`   // default 0.0.0.0
+	Port  int    `yaml:"port" json:"port"`   // default 7080
+	Loops int    `yaml:"loops" json:"loops"` // default is 0
+}
+
+type AutoMatch struct {
+	Key   string `yaml:"key" json:"key"`
+	Match string `yaml:"match" json:"match"`
+}
+
+type AutoConfig struct {
+	Matches []AutoMatch `yaml:"matches" json:"matches"`
+	Config  string      `yaml:"config" json:"config"`
+}
+
+type AutoTasks struct {
+	BasePath string       `yaml:"base_path" json:"base_path"`
+	Autos    []AutoConfig `yaml:"autos" json:"autos"`
 }
 
 type ServerConf struct {
-	Common CommonConf
-	Log    log.LogConf
+	Common CommonConf  `yaml: "common" json:"common"`
+	Log    log.LogConf `yaml:"log" json:"log"`
+	Tasks  AutoTasks   `yaml:"tasks" json:"tasks"`
 }
 
-// GetDefaultClientConf returns a client configuration with default values.
-func GetDefaultClientConf() ServerConf {
+// GetDefaultServerConf returns a client configuration with default values.
+func GetDefaultServerConf() ServerConf {
 	return ServerConf{
 		Common: CommonConf{
 			Bind: "0.0.0.0",
@@ -32,14 +48,14 @@ func GetDefaultClientConf() ServerConf {
 	}
 }
 
-func ParseClientConfig(path string) (ServerConf, error) {
-	cfg := GetDefaultClientConf()
+func ParseServerConfig(path string) (ServerConf, error) {
+	cfg := GetDefaultServerConf()
 	err := cfg.Load(path)
 	return cfg, err
 }
 
 func (cfg *ServerConf) Complete() {
-	// fmt.Printf("ProxyL: %v\n", cfg.Proxy)
+	// fmt.Printf("Tasks: %v\n", cfg.Tasks)
 
 	// if cfg.LogLink == "console" {
 	// 	cfg.LogDir = "console"
