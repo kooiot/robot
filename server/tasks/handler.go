@@ -13,6 +13,7 @@ import (
 	"github.com/kooiot/robot/server/common"
 	"github.com/kooiot/robot/server/config"
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 )
 
@@ -25,6 +26,27 @@ type TaskHandler struct {
 	base_path string
 	autos     *config.AutoTasks
 	tasks     []TaskInfo
+}
+
+func toStringMap(value interface{}) interface{} {
+	switch value.(type) {
+	case map[interface{}]interface{}:
+		val := value.(map[interface{}]interface{})
+		for k, v := range val {
+			val[k] = toStringMap(v)
+
+		}
+		value = cast.ToStringMap(val)
+	case map[string]interface{}:
+		val := value.(map[string]interface{})
+		for k, v := range val {
+			val[k] = toStringMap(v)
+
+		}
+		value = val
+	}
+
+	return value
 }
 
 func parseTask(file_path string) (msg.BatchTask, error) {
@@ -43,7 +65,13 @@ func parseTask(file_path string) (msg.BatchTask, error) {
 		fmt.Println(err)
 		return bt, err
 	}
-	return bt, nil
+	new_bt := msg.BatchTask{}
+	for _, v := range bt.Tasks {
+		v.Option = toStringMap(v.Option)
+		new_bt.Tasks = append(new_bt.Tasks, v)
+	}
+	log.Info("Task loaded: %#v", new_bt)
+	return new_bt, nil
 }
 
 func (h *TaskHandler) Init(server common.Server) error {
@@ -102,21 +130,19 @@ func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 			}
 		}
 		if found {
-			log.Info("Fire task to: %s - %v", client.Info.ClientID, t.Task)
-			opt := make(map[string]interface{})
-			j, _ := json.Marshal(t.Task)
-			json.Unmarshal(j, &opt)
+			log.Info("Fire task to: %s - %#v", client.Info.ClientID, t.Task)
 			task := msg.Task{
 				UUID:        uuid.NewV4().String(),
 				Name:        "batch",
 				Description: "Auto batch task",
-				Option:      opt,
+				Option:      t.Task,
 			}
-			data, err := json.Marshal(task)
+			data, err := json.Marshal(&task)
 			if err != nil {
 				log.Error("failed encode resp: %s", err)
 				log.Error("resp: %#v", task)
 			} else {
+				log.Info("Fire task json %s", data)
 				conn.Send(protocol.PackMessage("task", data))
 			}
 		}

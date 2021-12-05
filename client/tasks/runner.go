@@ -53,6 +53,17 @@ func (r *Runner) OnResult(config interface{}, result interface{}) error {
 	return nil
 }
 
+func (r *Runner) task_proc(task common.Task, info *TaskInfo) {
+	log.Info("Runner: start task:%s", info.Info.Name)
+	err := task.Start()
+	if err != nil {
+		log.Error("Runner: start task:%s error: %s", info.Info.Name, err.Error())
+		r.OnError(task, err)
+	} else {
+		r.OnStart(task)
+	}
+}
+
 func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common.Task) {
 	t := creator(r, info)
 	new_task := TaskInfo{
@@ -64,6 +75,8 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 	r.tasks[t] = new_task
 	p_info := r.tasks[parent]
 	p_info.Children = append(p_info.Children, new_task)
+
+	go r.task_proc(t, &new_task)
 }
 
 func (r *Runner) Add(task *msg.Task, parent common.Task) error {

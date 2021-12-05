@@ -1,10 +1,10 @@
 package msg
 
 type Task struct {
-	UUID        string                 `mapstructure:"uuid" json:"uuid"`
-	Name        string                 `mapstructure:"name" json:"name"`
-	Description string                 `mapstructure:"desc" json:"desc"`
-	Option      map[string]interface{} `mapstructure:"option" json:"option"`
+	UUID        string      `mapstructure:"uuid" json:"uuid"`
+	Name        string      `mapstructure:"name" json:"name"`
+	Description string      `mapstructure:"desc" json:"desc"`
+	Option      interface{} `mapstructure:"option" json:"option"`
 }
 
 type BatchTask struct {

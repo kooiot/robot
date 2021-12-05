@@ -25,7 +25,7 @@ func (s *BatchTask) Start() error {
 		return errors.New("error object")
 	}
 	for _, t := range s.config.Tasks {
-		log.Info("%s: create sub task:%v", s.info.Name, t.Name)
+		log.Info("%s: create sub task:%s", s.info.Name, t.Name)
 		r.Add(&t, s)
 	}
 	return nil
