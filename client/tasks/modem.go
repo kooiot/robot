@@ -11,8 +11,9 @@ import (
 )
 
 type ModemTask struct {
-	handler common.TaskHandler
+	info    *msg.Task
 	config  msg.ModemTask
+	handler common.TaskHandler
 }
 
 func init() {
@@ -67,14 +68,15 @@ func (s *ModemTask) Stop() error {
 	return nil
 }
 
-func NewModemTask(handler common.TaskHandler, option interface{}) common.Task {
-	data, _ := json.Marshal(option)
+func NewModemTask(handler common.TaskHandler, info *msg.Task) common.Task {
+	data, _ := json.Marshal(info.Option)
 
 	conf := msg.ModemTask{}
 	json.Unmarshal(data, &conf)
 
 	return &ModemTask{
-		handler: handler,
+		info:    info,
 		config:  conf,
+		handler: handler,
 	}
 }

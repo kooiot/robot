@@ -11,7 +11,10 @@ import (
 )
 
 type SerialTask struct {
-	config   msg.SerialTask
+	info    *msg.Task
+	config  msg.SerialTask
+	handler common.TaskHandler
+
 	src_port *serial.SerialPort
 	src      *helper.PingPong
 	dst_port *serial.SerialPort
@@ -30,8 +33,8 @@ func (s *SerialTask) Stop() error {
 	return nil
 }
 
-func NewSerialTask(handler common.TaskHandler, option interface{}) common.Task {
-	data, _ := json.Marshal(option)
+func NewSerialTask(handler common.TaskHandler, info *msg.Task) common.Task {
+	data, _ := json.Marshal(info.Option)
 
 	conf := msg.SerialTask{}
 	json.Unmarshal(data, &conf)
@@ -49,7 +52,9 @@ func NewSerialTask(handler common.TaskHandler, option interface{}) common.Task {
 	}
 
 	return &SerialTask{
+		info:     info,
 		config:   conf,
+		handler:  handler,
 		src_port: src,
 		src:      helper.NewPingPong(handler, helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}, src_stream),
 		dst_port: dest,

@@ -13,8 +13,9 @@ import (
 )
 
 type USBTask struct {
-	handler common.TaskHandler
+	info    *msg.Task
 	config  msg.USBTask
+	handler common.TaskHandler
 }
 
 func init() {
@@ -95,14 +96,15 @@ func (s *USBTask) Stop() error {
 	return nil
 }
 
-func NewUSBTask(handler common.TaskHandler, option interface{}) common.Task {
-	data, _ := json.Marshal(option)
+func NewUSBTask(handler common.TaskHandler, info *msg.Task) common.Task {
+	data, _ := json.Marshal(info.Option)
 
 	conf := msg.USBTask{}
 	json.Unmarshal(data, &conf)
 
 	return &USBTask{
-		handler: handler,
+		info:    info,
 		config:  conf,
+		handler: handler,
 	}
 }

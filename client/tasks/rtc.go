@@ -10,8 +10,9 @@ import (
 )
 
 type RTCTask struct {
-	handler common.TaskHandler
+	info    *msg.Task
 	config  msg.RTCTask
+	handler common.TaskHandler
 }
 
 func init() {
@@ -54,14 +55,15 @@ func (s *RTCTask) Stop() error {
 	return nil
 }
 
-func NewRTCTask(handler common.TaskHandler, option interface{}) common.Task {
-	data, _ := json.Marshal(option)
+func NewRTCTask(handler common.TaskHandler, info *msg.Task) common.Task {
+	data, _ := json.Marshal(info.Option)
 
 	conf := msg.RTCTask{}
 	json.Unmarshal(data, &conf)
 
 	return &RTCTask{
-		handler: handler,
+		info:    info,
 		config:  conf,
+		handler: handler,
 	}
 }

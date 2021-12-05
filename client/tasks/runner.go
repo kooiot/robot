@@ -54,7 +54,7 @@ func (r *Runner) OnResult(config interface{}, result interface{}) error {
 }
 
 func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common.Task) {
-	t := creator(r, info.Option)
+	t := creator(r, info)
 	new_task := TaskInfo{
 		Status: ST_NEW,
 		Info:   info,
@@ -78,5 +78,7 @@ func (r *Runner) Add(task *msg.Task, parent common.Task) error {
 }
 
 func NewRunner() *Runner {
-	return &Runner{}
+	return &Runner{
+		tasks: make(map[common.Task]TaskInfo),
+	}
 }

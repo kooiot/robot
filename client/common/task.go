@@ -7,7 +7,7 @@ type Task interface {
 	Stop() error
 }
 
-type TaskCreator func(TaskHandler, interface{}) Task
+type TaskCreator func(TaskHandler, *msg.Task) Task
 
 // Task Handler 接口
 type TaskHandler interface {
