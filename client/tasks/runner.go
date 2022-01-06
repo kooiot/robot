@@ -49,7 +49,7 @@ func (r *Runner) OnStop(common.Task, error) {
 }
 
 func (r *Runner) OnResult(config interface{}, result interface{}) error {
-
+	log.Info("config: %#v result:%#v", config, result)
 	return nil
 }
 
@@ -76,11 +76,12 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 	p_info := r.tasks[parent]
 	p_info.Children = append(p_info.Children, new_task)
 
+	log.Info("Runner: spawn task:%s", new_task.Info.Name)
 	go r.task_proc(t, &new_task)
 }
 
 func (r *Runner) Add(task *msg.Task, parent common.Task) error {
-	log.Info("%s: %v", task.Name, task.Option)
+	log.Info("Add task %s: %#v", task.Name, task.Option)
 	creator := gCreators[task.Name]
 	if creator == nil {
 		log.Info("unknown task %s", task.Name)

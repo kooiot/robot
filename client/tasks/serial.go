@@ -26,6 +26,16 @@ func init() {
 }
 
 func (s *SerialTask) Start() error {
+	err := s.src_port.Open()
+	if err != nil {
+		return err
+	}
+	err = s.dst_port.Open()
+	if err != nil {
+		return err
+	}
+	s.src.Start()
+	s.dst.Start()
 	return nil
 }
 
@@ -40,13 +50,13 @@ func NewSerialTask(handler common.TaskHandler, info *msg.Task) common.Task {
 	json.Unmarshal(data, &conf)
 
 	src_stream := port.NewStream()
-	src, err := serial.NewSerial(src_stream, serial.Baudrate(conf.Baudrate))
+	src, err := serial.NewSerial(src_stream, serial.Port(conf.SrcPort), serial.Baudrate(conf.Baudrate))
 	if err != nil {
 		return nil
 	}
 
 	dest_stream := port.NewStream()
-	dest, err := serial.NewSerial(dest_stream, serial.Baudrate(conf.Baudrate))
+	dest, err := serial.NewSerial(dest_stream, serial.Port(conf.DestPort), serial.Baudrate(conf.Baudrate))
 	if err != nil {
 		return nil
 	}

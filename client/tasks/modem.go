@@ -32,9 +32,16 @@ func (s *ModemTask) run() {
 		panic(err)
 	}
 	pinger.Count = 3
+	pinger.SetPrivileged(true)
+	pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
 	if err != nil {
-		panic(err)
+		result := common.TaskResult{
+			Result: true,
+			Error:  err.Error(),
+		}
+		s.handler.OnResult(s.config, result)
+		return
 	}
 
 	stats := pinger.Statistics() // get send/receive/duplicate/rtt stats

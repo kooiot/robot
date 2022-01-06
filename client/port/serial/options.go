@@ -2,6 +2,8 @@ package serial
 
 import (
 	"time"
+
+	"github.com/tarm/serial"
 )
 
 // Options
@@ -13,10 +15,10 @@ type Options struct {
 	DataBits byte
 
 	// Parity is the bit to use and defaults to ParityNone (no parity bit).
-	Parity byte
+	Parity serial.Parity
 
 	// Number of stop bits to use. Default is 1 (1 stop bit).
-	StopBits byte
+	StopBits serial.StopBits
 
 	// Total timeout
 	ReadTimeout time.Duration
@@ -26,7 +28,14 @@ type Options struct {
 type Option func(*Options)
 
 func newOptions(opt ...Option) *Options {
-	opts := Options{}
+	opts := Options{
+		Port:        "",
+		Baudrate:    9600,
+		DataBits:    8,
+		Parity:      serial.ParityNone,
+		StopBits:    1,
+		ReadTimeout: 5,
+	}
 
 	for _, o := range opt {
 		o(&opts)
@@ -60,13 +69,13 @@ func DataBits(data_bits byte) Option {
 	}
 }
 
-func Parity(parity byte) Option {
+func Parity(parity serial.Parity) Option {
 	return func(o *Options) {
 		o.Parity = parity
 	}
 }
 
-func StopBits(stop_bits byte) Option {
+func StopBits(stop_bits serial.StopBits) Option {
 	return func(o *Options) {
 		o.StopBits = stop_bits
 	}

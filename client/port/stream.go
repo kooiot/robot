@@ -66,13 +66,6 @@ func (s *Stream) Stop() {
 	}
 }
 
-func (s *Stream) start() error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	return s.port.Open()
-}
-
 func (s *Stream) Request(data []byte, parser StreamParser, timeout time.Duration) ([]byte, error) {
 	begin := time.Now()
 	for {
@@ -135,6 +128,5 @@ func NewStream() *Stream {
 		buffer: ringbuffer.New(0),
 	}
 	// s.channel = make(chan []byte)
-	go s.start()
 	return s
 }

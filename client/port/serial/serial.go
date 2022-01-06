@@ -34,9 +34,10 @@ func (s *SerialPort) Open() error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	log.Info("Serial open with :%#v", s.config)
 	p, err := serial.OpenPort(s.config)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error("Serial open failed:%s", err.Error())
 		s.handler.OnOpen(s, err)
 		return err
 	}
