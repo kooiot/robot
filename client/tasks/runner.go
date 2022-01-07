@@ -65,8 +65,8 @@ func (r *Runner) OnSuccess(task common.Task) {
 }
 
 func (r *Runner) update_task_status(task common.Task) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	// r.lock.Lock()
+	// defer r.lock.Unlock()
 	tinfo, ok := r.tasks[task]
 	if !ok {
 		log.Error("task not found!!")
@@ -92,7 +92,10 @@ func (r *Runner) update_task_status(task common.Task) {
 			result.Result = false
 			result.Error = "Sub task failed" // TODO:
 		}
-		r.OnResult(task, result)
+		//
+		go r.OnResult(task, result)
+	} else {
+		log.Info("task not finished!")
 	}
 }
 

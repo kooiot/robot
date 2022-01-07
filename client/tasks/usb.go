@@ -53,6 +53,7 @@ func (s *USBTask) run() {
 	if len(s.config.Reset) > 0 {
 		// Test reset
 		reset := hardware.NewNamedGPIO(s.config.Reset)
+
 		reset.Set(1)
 		time.Sleep(2 * time.Second)
 
@@ -61,11 +62,20 @@ func (s *USBTask) run() {
 			s.handler.OnError(s, errors.New("usb reset failed"))
 			return
 		}
+
 		reset.Set(0)
+		time.Sleep(2 * time.Second)
+
+		found, _ = s.findIds()
+		if !found {
+			s.handler.OnError(s, errors.New("usb reset failed"))
+			return
+		}
 	}
 	if len(s.config.Power) > 0 {
 		// Test reset
 		power := hardware.NewNamedGPIO(s.config.Power)
+
 		power.Set(0)
 		time.Sleep(2 * time.Second)
 
@@ -75,6 +85,13 @@ func (s *USBTask) run() {
 			return
 		}
 		power.Set(1)
+		time.Sleep(2 * time.Second)
+
+		found, _ = s.findIds()
+		if !found {
+			s.handler.OnError(s, errors.New("usb power failed"))
+			return
+		}
 	}
 
 	s.handler.OnSuccess(s)
