@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/pkg/net/msg"
@@ -35,9 +36,12 @@ func RegisterTask(task_name string, creator common.TaskCreator) {
 
 type Runner struct {
 	tasks map[common.Task]TaskInfo
+	lock  sync.Mutex
 }
 
 func (r *Runner) OnStart(task common.Task) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	tinfo, err := r.tasks[task]
 	if !err {
 		tinfo.Status = ST_RUN
@@ -60,9 +64,43 @@ func (r *Runner) OnSuccess(task common.Task) {
 	r.OnResult(task, result)
 }
 
+func (r *Runner) update_task_status(task common.Task) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	tinfo, ok := r.tasks[task]
+	if !ok {
+		log.Error("task not found!!")
+	}
+
+	all_done := true
+	has_err := false
+	for _, sub := range tinfo.Children {
+		if sub.Status != ST_DONE && sub.Status != ST_FAILED {
+			all_done = false
+			break
+		}
+		if sub.Status == ST_FAILED {
+			has_err = true
+		}
+	}
+	if all_done {
+		result := common.TaskResult{
+			Result: true,
+			Error:  "done",
+		}
+		if has_err {
+			result.Result = false
+			result.Error = "Sub task failed" // TODO:
+		}
+		r.OnResult(task, result)
+	}
+}
+
 func (r *Runner) OnResult(task common.Task, result common.TaskResult) error {
-	tinfo, err := r.tasks[task]
-	if err {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	tinfo, ok := r.tasks[task]
+	if !ok {
 		log.Error("task not found!! result:%#v", result)
 		return errors.New("task not found")
 	}
@@ -73,6 +111,10 @@ func (r *Runner) OnResult(task common.Task, result common.TaskResult) error {
 		tinfo.Status = ST_FAILED
 	}
 	tinfo.Result = result
+
+	if tinfo.Parent != nil {
+		r.update_task_status(tinfo.Parent)
+	}
 
 	return nil
 }
@@ -96,6 +138,10 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 		Task:   t,
 		Parent: parent,
 	}
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	r.tasks[t] = new_task
 	p_info := r.tasks[parent]
 	p_info.Children = append(p_info.Children, new_task)

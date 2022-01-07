@@ -56,7 +56,7 @@ func (s *ModemTask) run() {
 		t.Option = opt
 
 		s.handler.Spawn(NewUSBTask, &t, s)
-		s.handler.OnSuccess(s)
+		// s.handler.OnSuccess(s)
 	} else {
 
 		s.handler.OnError(s, errors.New("failed, statistics:"+string(stats_str)))
