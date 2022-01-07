@@ -56,15 +56,17 @@ func (s *SerialPort) read() {
 	for {
 		buf := make([]byte, 1024)
 		s.lock.Lock()
+
 		num, err := reader.Read(buf)
-		defer s.lock.Unlock()
 
 		if err != nil {
 			if s.serial != nil {
 				s.Close()
 			}
+			s.lock.Unlock()
 			break
 		}
+		s.lock.Unlock()
 
 		err = s.handler.OnMessage(buf[:num])
 		if err != nil {

@@ -168,5 +168,6 @@ func (r *Runner) Add(task *msg.Task, parent common.Task) (common.Task, error) {
 func NewRunner() *Runner {
 	return &Runner{
 		tasks: make(map[common.Task]TaskInfo),
+		lock:  sync.Mutex{},
 	}
 }

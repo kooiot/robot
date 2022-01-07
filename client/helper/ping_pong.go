@@ -89,6 +89,8 @@ func (c *PingPong) run() error {
 	err_total := 0
 	begin_time := time.Now()
 
+	log.Info("PingPong test start. config: %#v", c.Config)
+
 	msg := make([]byte, 0)
 	for i := 0; i < c.Config.Count; i++ {
 		if c.stop.Get() {
@@ -137,6 +139,8 @@ func (c *PingPong) run() error {
 					err_total += hdr_len + end_len + int(data_len)
 					log.Error("crc checking error")
 					return nil, errors.New("crc checking error")
+				} else {
+					// log.Info("crc checking done: %x", crc_16)
 				}
 				return data[i+hdr_len : i+hdr_len+int(data_len)], nil
 			}
@@ -157,6 +161,7 @@ func (c *PingPong) run() error {
 	c.Result.SendSpeed = float64(send_total) / time.Since(begin_time).Seconds()
 	c.Result.RecvSpeed = float64(recv_total) / time.Since(begin_time).Seconds()
 
+	log.Info("PingPong test finished: %#v", c.Result)
 	result := common.TaskResult{
 		Result: true,
 		Error:  "Done",
