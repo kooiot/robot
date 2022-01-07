@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/go-ping/ping"
@@ -32,22 +33,17 @@ func (s *ModemTask) run() {
 		panic(err)
 	}
 	pinger.Count = 3
-	pinger.SetPrivileged(true)
-	pinger.SetNetwork("ip4")
+	// pinger.SetPrivileged(true)
+	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
 	if err != nil {
-		result := common.TaskResult{
-			Result: true,
-			Error:  err.Error(),
-		}
-		s.handler.OnResult(s.config, result)
+		s.handler.OnError(s, err)
 		return
 	}
 
 	stats := pinger.Statistics() // get send/receive/duplicate/rtt stats
 	stats_str, _ := json.Marshal(stats)
 
-	result := common.TaskResult{}
 	if stats.PacketsRecv > 0 {
 		opt := make(map[string]interface{})
 		j, _ := json.Marshal(s.config.USB)
@@ -60,14 +56,10 @@ func (s *ModemTask) run() {
 		t.Option = opt
 
 		s.handler.Spawn(NewUSBTask, &t, s)
-
-		result.Result = true
-		result.Error = string(stats_str)
-		s.handler.OnResult(s.config, result)
+		s.handler.OnSuccess(s)
 	} else {
-		result.Result = false
-		result.Error = "failed, statistics:" + string(stats_str)
-		s.handler.OnResult(s.config, result)
+
+		s.handler.OnError(s, errors.New("failed, statistics:"+string(stats_str)))
 	}
 }
 

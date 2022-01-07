@@ -20,7 +20,8 @@ const (
 
 type TaskInfo struct {
 	Status   StatusType `json:"status"`
-	Info     *msg.Task  `json"info"`
+	Info     *msg.Task  `json:"info"`
+	Result   common.TaskResult
 	Parent   common.Task
 	Task     common.Task
 	Children []TaskInfo
@@ -36,20 +37,43 @@ type Runner struct {
 	tasks map[common.Task]TaskInfo
 }
 
-func (r *Runner) OnStart(common.Task) {
-
+func (r *Runner) OnStart(task common.Task) {
+	tinfo, err := r.tasks[task]
+	if !err {
+		tinfo.Status = ST_RUN
+	}
 }
 
-func (r *Runner) OnError(common.Task, error) {
-
+func (r *Runner) OnError(task common.Task, err error) {
+	result := common.TaskResult{
+		Result: false,
+		Error:  err.Error(),
+	}
+	r.OnResult(task, result)
 }
 
-func (r *Runner) OnStop(common.Task, error) {
-
+func (r *Runner) OnSuccess(task common.Task) {
+	result := common.TaskResult{
+		Result: true,
+		Error:  "done",
+	}
+	r.OnResult(task, result)
 }
 
-func (r *Runner) OnResult(config interface{}, result interface{}) error {
-	log.Info("config: %#v result:%#v", config, result)
+func (r *Runner) OnResult(task common.Task, result common.TaskResult) error {
+	tinfo, err := r.tasks[task]
+	if err {
+		log.Error("task not found!! result:%#v", result)
+		return errors.New("task not found")
+	}
+	log.Info("task: %s result:%#v", tinfo.Info.Name, result)
+	if result.Result {
+		tinfo.Status = ST_DONE
+	} else {
+		tinfo.Status = ST_FAILED
+	}
+	tinfo.Result = result
+
 	return nil
 }
 
@@ -64,7 +88,7 @@ func (r *Runner) task_proc(task common.Task, info *TaskInfo) {
 	}
 }
 
-func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common.Task) {
+func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common.Task) common.Task {
 	t := creator(r, info)
 	new_task := TaskInfo{
 		Status: ST_NEW,
@@ -78,17 +102,18 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 
 	log.Info("Runner: spawn task:%s", new_task.Info.Name)
 	go r.task_proc(t, &new_task)
+	return t
 }
 
-func (r *Runner) Add(task *msg.Task, parent common.Task) error {
+func (r *Runner) Add(task *msg.Task, parent common.Task) (common.Task, error) {
 	log.Info("Add task %s: %#v", task.Name, task.Option)
 	creator := gCreators[task.Name]
 	if creator == nil {
 		log.Info("unknown task %s", task.Name)
-		return errors.New("unknown task " + task.Name)
+		return nil, errors.New("unknown task " + task.Name)
 	}
-	r.Spawn(creator, task, nil)
-	return nil
+	t := r.Spawn(creator, task, parent)
+	return t, nil
 }
 
 func NewRunner() *Runner {

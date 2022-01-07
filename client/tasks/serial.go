@@ -60,14 +60,18 @@ func NewSerialTask(handler common.TaskHandler, info *msg.Task) common.Task {
 	if err != nil {
 		return nil
 	}
+	src_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
+	dest_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
 
-	return &SerialTask{
+	t := &SerialTask{
 		info:     info,
 		config:   conf,
 		handler:  handler,
 		src_port: src,
-		src:      helper.NewPingPong(handler, helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}, src_stream),
 		dst_port: dest,
-		dst:      helper.NewPingPong(handler, helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}, dest_stream),
 	}
+
+	t.src = helper.NewPingPong(t, handler, src_config, src_stream)
+	t.dst = helper.NewPingPong(t, handler, dest_config, dest_stream)
+	return t
 }

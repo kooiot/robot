@@ -35,7 +35,7 @@ func (s *USBTask) findIds() (bool, error) {
 
 	found := true
 	for i := 0; i < len(s.config.IDS); i++ {
-		if bytes.Index(out, []byte(s.config.IDS[i])) < 0 {
+		if !bytes.Contains(out, []byte(s.config.IDS[i])) {
 			found = false
 			err = errors.New("usb id " + s.config.IDS[i] + " missing")
 		}
@@ -47,10 +47,7 @@ func (s *USBTask) run() {
 	time.Sleep(3 * time.Second)
 	found, err := s.findIds()
 	if !found {
-		result := common.TaskResult{}
-		result.Result = false
-		result.Error = err.Error()
-		s.handler.OnResult(s.config, result)
+		s.handler.OnError(s, err)
 		return
 	}
 	if len(s.config.Reset) > 0 {
@@ -61,10 +58,7 @@ func (s *USBTask) run() {
 
 		found, _ := s.findIds()
 		if found {
-			result := common.TaskResult{}
-			result.Result = false
-			result.Error = "usb reset failed"
-			s.handler.OnResult(s.config, result)
+			s.handler.OnError(s, errors.New("usb reset failed"))
 			return
 		}
 		reset.Set(0)
@@ -77,19 +71,13 @@ func (s *USBTask) run() {
 
 		found, _ := s.findIds()
 		if found {
-			result := common.TaskResult{}
-			result.Result = false
-			result.Error = "usb reset failed"
-			s.handler.OnResult(s.config, result)
+			s.handler.OnError(s, errors.New("usb power failed"))
 			return
 		}
 		power.Set(1)
 	}
 
-	result := common.TaskResult{}
-	result.Result = true
-	result.Error = "done!"
-	s.handler.OnResult(s.config, result)
+	s.handler.OnSuccess(s)
 }
 
 func (s *USBTask) Stop() error {

@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"encoding/json"
+	"errors"
 	"os/exec"
 	"time"
 
@@ -39,16 +40,12 @@ func (s *RTCTask) run() {
 	}
 	rtc_now, _ := time.Parse("2006-01-02 15:04:05", string(out[:19]))
 
-	result := common.TaskResult{}
 	diff := time.Since(rtc_now)
 	if diff > time.Second {
-		result.Result = false
-		result.Error = "failed, diff:" + diff.String()
+		s.handler.OnError(s, errors.New("failed, diff:"+diff.String()))
 	} else {
-		result.Result = true
-		result.Error = "done!"
+		s.handler.OnSuccess(s)
 	}
-	s.handler.OnResult(s.config, result)
 }
 
 func (s *RTCTask) Stop() error {

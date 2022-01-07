@@ -24,6 +24,7 @@ type PingPongConfig struct {
 type PingPong struct {
 	Config  PingPongConfig      `json:"config"`
 	Result  common.StreamResult `json:"result"`
+	task    common.Task
 	handler common.TaskHandler
 	stream  *port.Stream
 	stop    atomic.Bool
@@ -156,18 +157,24 @@ func (c *PingPong) run() error {
 	c.Result.SendSpeed = float64(send_total) / time.Since(begin_time).Seconds()
 	c.Result.RecvSpeed = float64(recv_total) / time.Since(begin_time).Seconds()
 
-	c.handler.OnResult(c.Config, c.Result)
+	result := common.TaskResult{
+		Result: true,
+		Error:  "Done",
+		Info:   c.Result,
+	}
+	c.handler.OnResult(c.task, result)
 
 	return nil
 }
 
-func NewPingPong(handler common.TaskHandler, c PingPongConfig, stream *port.Stream) *PingPong {
+func NewPingPong(task common.Task, handler common.TaskHandler, c PingPongConfig, stream *port.Stream) *PingPong {
 	if c.MaxMsgSize == 0 {
 		c.MaxMsgSize = 512
 	}
 
 	o := PingPong{
 		Config:  c,
+		task:    task,
 		handler: handler,
 		stream:  stream,
 		stop:    atomic.Bool{},
