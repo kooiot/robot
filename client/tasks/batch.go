@@ -35,7 +35,7 @@ func (s *BatchTask) Stop() error {
 	return nil
 }
 
-func NewBatchTask(handler common.TaskHandler, info *msg.Task) common.Task {
+func NewBatchTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.BatchTask{}

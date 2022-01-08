@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/Allenxuxu/ringbuffer"
-	"github.com/kooiot/robot/pkg/net/protocol"
+	"github.com/kooiot/robot/pkg/net/msg"
 )
 
 type Connection struct {
@@ -77,7 +77,7 @@ func (conn *Connection) read() {
 
 		conn.buffer.WithData(buf[:num])
 
-		ctx, recvData := protocol.UnPacketMessage(conn.buffer)
+		ctx, recvData := msg.UnPacketMessage(conn.buffer)
 		if ctx != nil || len(recvData) != 0 {
 			sendData := conn.onMessageCallback(ctx, recvData)
 			if sendData != nil {

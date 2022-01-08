@@ -92,6 +92,7 @@ func (c *PingPong) run() error {
 	log.Info("PingPong test start. config: %#v", c.Config)
 
 	msg := make([]byte, 0)
+
 	for i := 0; i < c.Config.Count; i++ {
 		if c.stop.Get() {
 			break
@@ -151,6 +152,7 @@ func (c *PingPong) run() error {
 			c.Result.Passed += 1
 			recv_total += len(recv)
 		}
+		c.Result.Count += 1
 		if !c.Config.IsPing {
 			msg = recv
 		}

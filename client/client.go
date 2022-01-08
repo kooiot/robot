@@ -43,7 +43,7 @@ func (c *Client) OnRun() {
 		name := text[:len(text)-1]
 
 		if !login {
-			msg := &msg.Login{
+			login := &msg.Login{
 				ClientID: c.config.Common.ClientID,
 				User:     c.config.Common.User,
 				Passwd:   c.config.Common.Password,
@@ -51,21 +51,21 @@ func (c *Client) OnRun() {
 				Hardware: "ARM v7",
 				System:   "OpenWRT",
 			}
-			log.Info("Send login: %v", msg)
+			log.Info("Send login: %v", login)
 
-			data, err := json.Marshal(msg)
+			data, err := json.Marshal(login)
 			if err != nil {
 				panic(err)
 			}
 			buffer = protocol.PackMessage("login", data)
 		} else {
-			msg := &msg.Logout{
+			logout := &msg.Logout{
 				ClientID: name,
 				ID:       0,
 			}
-			log.Info("Send logout: %v", msg)
+			log.Info("Send logout: %v", logout)
 
-			data, err := json.Marshal(msg)
+			data, err := json.Marshal(logout)
 			if err != nil {
 				panic(err)
 			}

@@ -134,7 +134,7 @@ func (r *Runner) task_proc(task common.Task, info *TaskInfo) {
 }
 
 func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common.Task) common.Task {
-	t := creator(r, info)
+	t := creator(r, info, parent)
 	new_task := TaskInfo{
 		Status: ST_NEW,
 		Info:   info,
@@ -163,6 +163,10 @@ func (r *Runner) Add(task *msg.Task, parent common.Task) (common.Task, error) {
 	}
 	t := r.Spawn(creator, task, parent)
 	return t, nil
+}
+
+func (r *Runner) Wait(task common.Task, wait common.TaskWait) error {
+	return nil
 }
 
 func NewRunner() *Runner {

@@ -43,3 +43,7 @@ type ModemTask struct {
 type NamedGPIOTask struct {
 	Name string `mapstructure:"name" json:"name"`
 }
+
+type DoneTask struct {
+	Leds []string `mapstructure:"leds" json:"leds"`
+}

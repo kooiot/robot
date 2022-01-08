@@ -43,7 +43,7 @@ func (s *SerialTask) Stop() error {
 	return nil
 }
 
-func NewSerialTask(handler common.TaskHandler, info *msg.Task) common.Task {
+func NewSerialTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.SerialTask{}

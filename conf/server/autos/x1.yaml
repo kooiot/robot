@@ -17,3 +17,12 @@ tasks:
         ids: "2c7c:0125"
         reset: "pcie_reset"
         power: "pcie_power"
+  -
+    name: done
+    desc: Test done
+    option:
+      leds:
+        - "gs"
+        - "bs"
+        - "cloud"
+        - "modem"
