@@ -74,7 +74,7 @@ func (s *Stream) isOpen() bool {
 	return s.port != nil
 }
 
-func (s *Stream) Request(data []byte, parser StreamParser, timeout time.Duration) ([]byte, error) {
+func (s *Stream) Send(data []byte, timeout time.Duration) error {
 	begin := time.Now()
 	for {
 		if s.isOpen() {
@@ -82,18 +82,24 @@ func (s *Stream) Request(data []byte, parser StreamParser, timeout time.Duration
 		}
 		time.Sleep(10 * time.Millisecond)
 		if time.Since(begin) > timeout {
-			return nil, errors.New("timeout")
+			return errors.New("timeout")
 		}
 	}
 
 	s.lock.Lock()
-	// s.parser = parser // Set parser
-	err := s.port.Write(data)
-	s.lock.Unlock()
+	defer s.lock.Unlock()
+	return s.port.Write(data)
+}
+
+func (s *Stream) Request(data []byte, parser StreamParser, timeout time.Duration) ([]byte, error) {
+	err := s.Send(data, timeout)
 
 	if err != nil {
 		return nil, err
 	}
+
+	begin := time.Now()
+
 	var msg []byte
 	last_len := 0
 	for {

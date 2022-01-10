@@ -54,6 +54,7 @@ func (c *PingPong) genMsg() []byte {
 	if data_len < 16 {
 		data_len = 16 + rand.Intn(16)
 	}
+	// log.Info("PingPong generate msg len: %d", data_len)
 
 	buf := make([]byte, data_len)
 	for i := 0; i < data_len; i++ {
@@ -102,40 +103,52 @@ func (c *PingPong) run() error {
 		}
 		send_total += len(msg)
 		recv, err := c.stream.Request(msg, func(buffer *ringbuffer.RingBuffer) ([]byte, error) {
-			if buffer.Length() < hdr_len+end_len {
-				return nil, nil
+			// Try to find the SK
+			for {
+				data := buffer.Bytes()
+				if buffer.Length() < hdr_len+end_len {
+					return nil, nil
+				}
+
+				// Find SK
+				sk_i := bytes.Index(data, SK)
+				if sk_i > 0 {
+					log.Error("SK checking error %d", sk_i)
+					err_total += sk_i
+					buffer.Retrieve(sk_i)
+				} else if sk_i < 0 {
+					log.Error("SK Find None %d", len(data))
+					err_total += len(data) - 3
+					buffer.Retrieve(len(data) - 3)
+					return nil, nil
+				} else {
+					break
+				}
 			}
 			data := buffer.Bytes()
 
-			// Find SK
-			i := bytes.Index(data, SK)
-			if i > 0 {
-				err_total += i
-				buffer.Retrieve(i)
-			}
-			if i < 0 {
-				err_total += len(data) - 3
-				buffer.Retrieve(len(data) - 3)
-				return nil, nil
-			}
-
 			// Read len
-			data_len := binary.BigEndian.Uint16(data[i+3 : i+5])
+			data_len := binary.BigEndian.Uint16(data[3:5])
+			// log.Info("PingPong recv msg len: %d", data_len)
+
 			if len(data) < hdr_len+end_len+int(data_len) {
+				// log.Info("len:%d data_len:%d", len(data), hdr_len+end_len+int(data_len))
 				return nil, nil
 			}
 
-			if !bytes.Equal(EK, data[i+hdr_len+int(data_len)+2:i+hdr_len+int(data_len)+5]) {
+			if !bytes.Equal(EK, data[hdr_len+int(data_len)+2:hdr_len+int(data_len)+5]) {
+				log.Error("EK Check Error %d", len(data))
 				err_total += 1
 				buffer.Retrieve(1)
 				return nil, nil
 			} else {
 				// Retrieve buffer
 				buffer.Retrieve(hdr_len + end_len + int(data_len))
+				// log.Info("left size: %d", buffer.Length())
 
 				h := crc16.New(crc16.Modbus)
-				h.Write(data[i+hdr_len : i+hdr_len+int(data_len)])
-				crc_16 := binary.BigEndian.Uint16(data[i+hdr_len+int(data_len) : i+hdr_len+int(data_len)+2])
+				h.Write(data[hdr_len : hdr_len+int(data_len)])
+				crc_16 := binary.BigEndian.Uint16(data[hdr_len+int(data_len) : hdr_len+int(data_len)+2])
 				if crc_16 != h.Sum16() {
 					err_total += hdr_len + end_len + int(data_len)
 					log.Error("crc checking error")
@@ -143,20 +156,29 @@ func (c *PingPong) run() error {
 				} else {
 					// log.Info("crc checking done: %x", crc_16)
 				}
-				return data[i+hdr_len : i+hdr_len+int(data_len)], nil
+				return data[0 : hdr_len+end_len+int(data_len)], nil
 			}
 		}, time.Millisecond*1000)
+
 		if err != nil {
+			log.Error("resp error:%s", err.Error())
 			c.Result.Failed += 1
 		} else {
 			c.Result.Passed += 1
 			recv_total += len(recv)
 		}
+
 		c.Result.Count += 1
 		if !c.Config.IsPing {
+			// log.Info("write back len: %d", len(recv))
 			msg = recv
 		}
 	}
+	if len(msg) > 0 && !c.Config.IsPing {
+		// Write last recv
+		c.stream.Send(msg, 100)
+	}
+
 	c.Result.ErrBytes = err_total
 	c.Result.RecvBytes = recv_total + err_total
 	c.Result.SendBytes = send_total
@@ -170,6 +192,9 @@ func (c *PingPong) run() error {
 		Info:   c.Result,
 	}
 	c.handler.OnResult(c.task, result)
+
+	// Stop stream
+	defer c.stream.Stop()
 
 	return nil
 }

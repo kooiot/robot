@@ -61,7 +61,7 @@ func NewSerialTask(handler common.TaskHandler, info *msg.Task, parent common.Tas
 		return nil
 	}
 	src_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
-	dest_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
+	dest_config := helper.PingPongConfig{IsPing: false, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
 
 	t := &SerialTask{
 		info:     info,

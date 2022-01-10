@@ -3,8 +3,8 @@ tasks:
     name: serial
     desc: serial test com1 com2
     option:
-      src: /tmp/ttyS1
-      dst: /tmp/ttyS2
+      src: /dev/ttyS1
+      dst: /dev/ttyS2
       baudrate: 115200
       count: 100
       max_msg_size: 500
