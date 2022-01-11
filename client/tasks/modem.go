@@ -3,6 +3,7 @@ package tasks
 import (
 	"encoding/json"
 	"errors"
+	"os/exec"
 	"time"
 
 	"github.com/go-ping/ping"
@@ -28,6 +29,12 @@ func (s *ModemTask) Start() error {
 }
 
 func (s *ModemTask) run() {
+	cmd := exec.Command("sh", "-c", "sysctl -w net.ipv4.ping_group_range=\"0   2147483647\"")
+	err := cmd.Run()
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	time.Sleep(5 * time.Second)
 	pinger, err := ping.NewPinger(s.config.PingAddr)
 	if err != nil {
@@ -48,15 +55,15 @@ func (s *ModemTask) run() {
 	stats_str, _ := json.Marshal(stats)
 
 	if stats.PacketsRecv > 0 {
-		opt := make(map[string]interface{})
-		j, _ := json.Marshal(s.config.USB)
-		json.Unmarshal(j, &opt)
+		// opt := make(map[string]interface{})
+		// j, _ := json.Marshal(s.config.USB)
+		// json.Unmarshal(j, &opt)
 
 		t := msg.Task{}
 		t.UUID = uuid.NewV4().String()
 		t.Name = "usb"
 		t.Description = "Sub task from modem task"
-		t.Option = opt
+		t.Option = s.config.USB
 
 		s.handler.Spawn(NewUSBTask, &t, s)
 		// s.handler.OnSuccess(s)

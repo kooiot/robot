@@ -10,7 +10,8 @@ type NamedLed struct {
 }
 
 func (s *NamedLed) Set(value int) error {
-	_, err := exec.Command("echo", strconv.Itoa(value), ">", "/sys/class/led/"+s.name+"/brightness").Output()
+	cmd := "echo \"" + strconv.Itoa(value) + "\" > /sys/class/led/" + s.name + "/brightness"
+	_, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
 		return err
 	}
@@ -18,7 +19,8 @@ func (s *NamedLed) Set(value int) error {
 }
 
 func (s *NamedLed) Get(value int) (int, error) {
-	out, err := exec.Command("cat", "/sys/class/led/"+s.name+"/brightness").Output()
+	cmd := "cat /sys/class/led/" + s.name + "/brightness"
+	out, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
 		return -1, err
 	}

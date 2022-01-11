@@ -14,7 +14,8 @@ tasks:
     option:
       ping_addr: 8.8.8.8
       usb:
-        ids: "2c7c:0125"
+        ids:
+          - "2c7c:0125"
         reset: "pcie_reset"
         power: "pcie_power"
   -

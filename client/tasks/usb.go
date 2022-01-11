@@ -27,26 +27,44 @@ func (s *USBTask) Start() error {
 	return nil
 }
 
-func (s *USBTask) findIds() (bool, error) {
+func (s *USBTask) hasIds() (bool, error) {
 	out, err := exec.Command("lsusb").Output()
 	if err != nil {
 		return false, err
 	}
+	// log.Info("lsusb output: %s %#v", out, s.config.IDS)
 
-	found := true
+	ret := true
 	for i := 0; i < len(s.config.IDS); i++ {
 		if !bytes.Contains(out, []byte(s.config.IDS[i])) {
-			found = false
+			ret = false
 			err = errors.New("usb id " + s.config.IDS[i] + " missing")
 		}
 	}
-	return found, err
+	return ret, err
+}
+
+func (s *USBTask) hasNoIds() (bool, error) {
+	out, err := exec.Command("lsusb").Output()
+	if err != nil {
+		return false, err
+	}
+	// log.Info("lsusb output: %s", out)
+
+	ret := true
+	for i := 0; i < len(s.config.IDS); i++ {
+		if bytes.Contains(out, []byte(s.config.IDS[i])) {
+			ret = false
+			err = errors.New("usb id " + s.config.IDS[i] + " found")
+		}
+	}
+	return ret, err
 }
 
 func (s *USBTask) run() {
 	time.Sleep(3 * time.Second)
-	found, err := s.findIds()
-	if !found {
+	ret, err := s.hasIds()
+	if !ret {
 		s.handler.OnError(s, err)
 		return
 	}
@@ -54,21 +72,29 @@ func (s *USBTask) run() {
 		// Test reset
 		reset := hardware.NewNamedGPIO(s.config.Reset)
 
-		reset.Set(1)
+		err = reset.Set(1)
+		if nil != err {
+			s.handler.OnError(s, err)
+			return
+		}
 		time.Sleep(2 * time.Second)
 
-		found, _ := s.findIds()
-		if found {
-			s.handler.OnError(s, errors.New("usb reset failed"))
+		ret, err := s.hasNoIds()
+		if !ret {
+			s.handler.OnError(s, errors.New("usb reset trigger failed, error:"+err.Error()))
 			return
 		}
 
-		reset.Set(0)
-		time.Sleep(2 * time.Second)
+		err = reset.Set(0)
+		if nil != err {
+			s.handler.OnError(s, err)
+			return
+		}
+		time.Sleep(15 * time.Second)
 
-		found, _ = s.findIds()
-		if !found {
-			s.handler.OnError(s, errors.New("usb reset failed"))
+		ret, err = s.hasIds()
+		if !ret {
+			s.handler.OnError(s, errors.New("usb reset backover failed, error:"+err.Error()))
 			return
 		}
 	}
@@ -76,20 +102,28 @@ func (s *USBTask) run() {
 		// Test reset
 		power := hardware.NewNamedGPIO(s.config.Power)
 
-		power.Set(0)
-		time.Sleep(2 * time.Second)
-
-		found, _ := s.findIds()
-		if found {
-			s.handler.OnError(s, errors.New("usb power failed"))
+		err = power.Set(0)
+		if nil != err {
+			s.handler.OnError(s, err)
 			return
 		}
-		power.Set(1)
 		time.Sleep(2 * time.Second)
 
-		found, _ = s.findIds()
-		if !found {
-			s.handler.OnError(s, errors.New("usb power failed"))
+		ret, err := s.hasNoIds()
+		if !ret {
+			s.handler.OnError(s, errors.New("usb power down failed, error:"+err.Error()))
+			return
+		}
+		err = power.Set(1)
+		if nil != err {
+			s.handler.OnError(s, err)
+			return
+		}
+		time.Sleep(15 * time.Second)
+
+		ret, err = s.hasIds()
+		if !ret {
+			s.handler.OnError(s, errors.New("usb power up failed, error:"+err.Error()))
 			return
 		}
 	}
@@ -106,6 +140,7 @@ func NewUSBTask(handler common.TaskHandler, info *msg.Task, parent common.Task) 
 
 	conf := msg.USBTask{}
 	json.Unmarshal(data, &conf)
+	// log.Info("USB Task: %#v from: %#v", conf, info.Option)
 
 	return &USBTask{
 		TaskBase: common.NewTaskBase(info),
