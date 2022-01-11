@@ -35,14 +35,14 @@ func RegisterTask(task_name string, creator common.TaskCreator) {
 }
 
 type Runner struct {
-	tasks map[common.Task]TaskInfo
+	tasks map[string]TaskInfo
 	lock  sync.Mutex
 }
 
 func (r *Runner) OnStart(task common.Task) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	tinfo, err := r.tasks[task]
+	tinfo, err := r.tasks[task.ID()]
 	if !err {
 		tinfo.Status = ST_RUN
 	}
@@ -67,7 +67,7 @@ func (r *Runner) OnSuccess(task common.Task) {
 func (r *Runner) update_task_status(task common.Task) {
 	// r.lock.Lock()
 	// defer r.lock.Unlock()
-	tinfo, ok := r.tasks[task]
+	tinfo, ok := r.tasks[task.ID()]
 	if !ok {
 		log.Error("task not found!!")
 	}
@@ -102,7 +102,7 @@ func (r *Runner) update_task_status(task common.Task) {
 func (r *Runner) OnResult(task common.Task, result common.TaskResult) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	tinfo, ok := r.tasks[task]
+	tinfo, ok := r.tasks[task.ID()]
 	if !ok {
 		log.Error("task not found!! result:%#v", result)
 		return errors.New("task not found")
@@ -145,9 +145,11 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.tasks[t] = new_task
-	p_info := r.tasks[parent]
-	p_info.Children = append(p_info.Children, new_task)
+	r.tasks[t.ID()] = new_task
+	if parent != nil {
+		p_info := r.tasks[parent.ID()]
+		p_info.Children = append(p_info.Children, new_task)
+	}
 
 	log.Info("Runner: spawn task:%s", new_task.Info.Name)
 	go r.task_proc(t, &new_task)
@@ -171,7 +173,7 @@ func (r *Runner) Wait(task common.Task, wait common.TaskWait) error {
 
 func NewRunner() *Runner {
 	return &Runner{
-		tasks: make(map[common.Task]TaskInfo),
+		tasks: make(map[string]TaskInfo),
 		lock:  sync.Mutex{},
 	}
 }

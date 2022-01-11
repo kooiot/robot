@@ -11,7 +11,7 @@ import (
 )
 
 type SerialTask struct {
-	info    *msg.Task
+	common.TaskBase
 	config  msg.SerialTask
 	handler common.TaskHandler
 
@@ -64,7 +64,7 @@ func NewSerialTask(handler common.TaskHandler, info *msg.Task, parent common.Tas
 	dest_config := helper.PingPongConfig{IsPing: false, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
 
 	t := &SerialTask{
-		info:     info,
+		TaskBase: common.NewTaskBase(info),
 		config:   conf,
 		handler:  handler,
 		src_port: src,

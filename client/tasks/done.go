@@ -10,7 +10,7 @@ import (
 )
 
 type DoneTask struct {
-	info    *msg.Task
+	common.TaskBase
 	config  msg.DoneTask
 	handler common.TaskHandler
 	parent  common.Task
@@ -61,9 +61,9 @@ func NewDoneTask(handler common.TaskHandler, info *msg.Task, parent common.Task)
 	json.Unmarshal(data, &conf)
 
 	return &DoneTask{
-		info:    info,
-		config:  conf,
-		handler: handler,
-		parent:  parent,
+		TaskBase: common.NewTaskBase(info),
+		config:   conf,
+		handler:  handler,
+		parent:   parent,
 	}
 }

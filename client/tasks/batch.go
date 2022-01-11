@@ -10,7 +10,7 @@ import (
 )
 
 type BatchTask struct {
-	info    *msg.Task
+	common.TaskBase
 	config  msg.BatchTask
 	handler common.TaskHandler
 }
@@ -25,7 +25,7 @@ func (s *BatchTask) Start() error {
 		return errors.New("error object")
 	}
 	for _, t := range s.config.Tasks {
-		log.Info("%s: create sub task:%s", s.info.Name, t.Name)
+		log.Info("%s: create sub task:%s", s.Info.Name, t.Name)
 		r.Add(&t, s)
 	}
 	return nil
@@ -42,8 +42,8 @@ func NewBatchTask(handler common.TaskHandler, info *msg.Task, parent common.Task
 	json.Unmarshal(data, &conf)
 
 	return &BatchTask{
-		info:    info,
-		config:  conf,
-		handler: handler,
+		TaskBase: common.NewTaskBase(info),
+		config:   conf,
+		handler:  handler,
 	}
 }

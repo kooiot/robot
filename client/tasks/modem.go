@@ -8,11 +8,12 @@ import (
 	"github.com/go-ping/ping"
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/log"
 	uuid "github.com/satori/go.uuid"
 )
 
 type ModemTask struct {
-	info    *msg.Task
+	common.TaskBase
 	config  msg.ModemTask
 	handler common.TaskHandler
 }
@@ -33,6 +34,8 @@ func (s *ModemTask) run() {
 		panic(err)
 	}
 	pinger.Count = 3
+
+	log.Info("Modem task start ping")
 	// pinger.SetPrivileged(true)
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
@@ -58,7 +61,6 @@ func (s *ModemTask) run() {
 		s.handler.Spawn(NewUSBTask, &t, s)
 		// s.handler.OnSuccess(s)
 	} else {
-
 		s.handler.OnError(s, errors.New("failed, statistics:"+string(stats_str)))
 	}
 }
@@ -74,8 +76,8 @@ func NewModemTask(handler common.TaskHandler, info *msg.Task, parent common.Task
 	json.Unmarshal(data, &conf)
 
 	return &ModemTask{
-		info:    info,
-		config:  conf,
-		handler: handler,
+		TaskBase: common.NewTaskBase(info),
+		config:   conf,
+		handler:  handler,
 	}
 }

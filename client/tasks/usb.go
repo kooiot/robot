@@ -13,7 +13,7 @@ import (
 )
 
 type USBTask struct {
-	info    *msg.Task
+	common.TaskBase
 	config  msg.USBTask
 	handler common.TaskHandler
 }
@@ -108,8 +108,8 @@ func NewUSBTask(handler common.TaskHandler, info *msg.Task, parent common.Task) 
 	json.Unmarshal(data, &conf)
 
 	return &USBTask{
-		info:    info,
-		config:  conf,
-		handler: handler,
+		TaskBase: common.NewTaskBase(info),
+		config:   conf,
+		handler:  handler,
 	}
 }

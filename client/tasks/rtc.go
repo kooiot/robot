@@ -11,7 +11,7 @@ import (
 )
 
 type RTCTask struct {
-	info    *msg.Task
+	common.TaskBase
 	config  msg.RTCTask
 	handler common.TaskHandler
 }
@@ -59,8 +59,8 @@ func NewRTCTask(handler common.TaskHandler, info *msg.Task, parent common.Task) 
 	json.Unmarshal(data, &conf)
 
 	return &RTCTask{
-		info:    info,
-		config:  conf,
-		handler: handler,
+		TaskBase: common.NewTaskBase(info),
+		config:   conf,
+		handler:  handler,
 	}
 }
