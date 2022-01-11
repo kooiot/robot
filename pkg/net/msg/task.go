@@ -40,8 +40,19 @@ type ModemTask struct {
 	USB      USBTask `mapstructure:"usb" json:"usb"`
 }
 
+type EthernetTask struct {
+	PingAddr string   `mapstructure:"ping_addr" json:"ping_addr"`
+	Init     []string `mapstructure:"init" json:"init"`
+}
+
 type NamedGPIOTask struct {
 	Name string `mapstructure:"name" json:"name"`
+}
+
+type LedsTask struct {
+	Leds  []string `mapstructure:"leds" json:"leds"`
+	Count int      `mapstructure:"count" json:"count"`
+	Span  int      `mapstructure:"span" json:"span"`
 }
 
 type DoneTask struct {

@@ -18,12 +18,30 @@ tasks:
           - "2c7c:0125"
         reset: "pcie_reset"
         power: "pcie_power"
+  - 
+    name: ethernet
+    desc: ETH1 ping test
+    option:
+      ping_addr: 192.168.2.139
+      init:
+        - "ifconfig eth1 192.168.2.248"
+  -
+    name: leds
+    desc: Test LEDS
+    option:
+      leds:
+        - "kooiot:green:gs"
+        - "kooiot:green:bs"
+        - "kooiot:green:cloud"
+        - "kooiot:green:modem"
+      count: 50
+      span: 200
   -
     name: done
     desc: Test done
     option:
       leds:
-        - "gs"
-        - "bs"
-        - "cloud"
-        - "modem"
+        - "kooiot:green:gs"
+        - "kooiot:green:bs"
+        - "kooiot:green:cloud"
+        - "kooiot:green:modem"
