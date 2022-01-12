@@ -1,47 +1,45 @@
 package common
 
 import (
+	"context"
+
 	"github.com/kooiot/robot/pkg/net/msg"
-	uuid "github.com/satori/go.uuid"
 )
 
-type TaskResult struct {
-	Result bool        `json:"result"`
-	Error  string      `json:"error"`
-	Info   interface{} `json:"info"`
-}
-
 type Task interface {
-	ID() string
+	TaskInfo() *msg.Task
 	Start() error
 	Stop() error
 }
 
 type TaskBase struct {
-	UUID string
-	Info *msg.Task
+	Info *msg.Task `json:"info"`
 }
 
-func (t *TaskBase) ID() string {
-	return t.UUID
+func (t *TaskBase) TaskInfo() *msg.Task {
+	return t.Info
 }
 
 func NewTaskBase(info *msg.Task) TaskBase {
 	return TaskBase{
-		UUID: uuid.NewV4().String(),
 		Info: info,
 	}
 }
 
-type TaskCreator func(handler TaskHandler, info *msg.Task, parent Task) Task
-type TaskWait func(task Task, result TaskResult)
+type TaskCreator func(ctx context.Context, handler TaskHandler, info *msg.Task, parent Task) Task
+type TaskWait func(task Task, result *msg.TaskResult)
 
 // Task Handler 接口
 type TaskHandler interface {
 	OnStart(Task)
 	OnError(Task, error)
 	OnSuccess(Task)
-	OnResult(Task, TaskResult) error
+	OnResult(Task, *msg.TaskResult) error
 	Spawn(creator TaskCreator, info *msg.Task, parent Task) Task
 	Wait(Task, TaskWait) error
+}
+
+type Reporter interface {
+	SendResult(*msg.Task, *msg.TaskResult) error
+	SendTaskUpdate(*msg.Task) error
 }

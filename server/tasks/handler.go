@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -9,10 +10,9 @@ import (
 	"github.com/Allenxuxu/gev"
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/net/protocol"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/xlog"
 	"github.com/kooiot/robot/server/common"
 	"github.com/kooiot/robot/server/config"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 )
@@ -23,6 +23,7 @@ type TaskInfo struct {
 }
 
 type TaskHandler struct {
+	ctx       context.Context
 	base_path string
 	autos     *config.AutoTasks
 	tasks     []TaskInfo
@@ -49,7 +50,8 @@ func toStringMap(value interface{}) interface{} {
 	return value
 }
 
-func parseTask(file_path string) (msg.BatchTask, error) {
+func (h *TaskHandler) parseTask(file_path string) (msg.BatchTask, error) {
+	xl := xlog.FromContextSafe(h.ctx)
 	bt := msg.BatchTask{}
 
 	v := viper.New()
@@ -70,21 +72,22 @@ func parseTask(file_path string) (msg.BatchTask, error) {
 		v.Option = toStringMap(v.Option)
 		new_bt.Tasks = append(new_bt.Tasks, v)
 	}
-	log.Info("Task loaded: %#v", new_bt)
+	xl.Info("Task loaded: %#v", new_bt)
 	return new_bt, nil
 }
 
 func (h *TaskHandler) Init(server common.Server) error {
+	xl := xlog.FromContextSafe(h.ctx)
 	config_dir := server.ConfigDir()
 	base_path := path.Join(config_dir, h.autos.Folder)
 	h.base_path = base_path
-	log.Info("Task loading from: %s", h.autos.Folder)
+	xl.Info("Task loading from: %s", h.autos.Folder)
 
 	for _, t := range h.autos.Autos {
 		config_path := path.Join(base_path, t.Config)
-		task, err := parseTask(config_path)
+		task, err := h.parseTask(config_path)
 		if err != nil {
-			log.Error("Task loading failed: %s", err)
+			xl.Error("Task loading failed: %s", err)
 		} else {
 			h.tasks = append(h.tasks, TaskInfo{
 				Task:    task,
@@ -100,15 +103,16 @@ func matchString(pat string, value string) bool {
 	var m = regexp.MustCompile(pat)
 
 	m_list := m.FindStringSubmatch(value)
-	if m_list == nil {
-		log.Info("Not matched %s - %s", pat, value)
-	} else {
-		log.Info("Task matched %s - %s", pat, value)
-	}
+	// if m_list == nil {
+	// 	xl.Info("Not matched %s - %s", pat, value)
+	// } else {
+	// 	xl.Info("Task matched %s - %s", pat, value)
+	// }
 	return m_list != nil
 }
 
 func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
+	xl := xlog.FromContextSafe(h.ctx)
 	for _, t := range h.tasks {
 		found := true
 		for _, m := range t.Matches {
@@ -130,19 +134,19 @@ func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 			}
 		}
 		if found {
-			log.Info("Fire task to: %s - %#v", client.Info.ClientID, t.Task)
+			xl.Info("Fire task to: %s - %#v", client.Info.ClientID, t.Task)
 			task := msg.Task{
-				UUID:        uuid.NewV4().String(),
+				// UUID:        uuid.NewV4().String(),
 				Name:        "batch",
 				Description: "Auto batch task",
 				Option:      t.Task,
 			}
 			data, err := json.Marshal(&task)
 			if err != nil {
-				log.Error("failed encode resp: %s", err)
-				log.Error("resp: %#v", task)
+				xl.Error("failed encode resp: %s", err)
+				xl.Error("resp: %#v", task)
 			} else {
-				log.Info("Fire task json %s", data)
+				xl.Info("Fire task json %s", data)
 				conn.Send(protocol.PackMessage("task", data))
 			}
 		}
@@ -153,6 +157,10 @@ func (h *TaskHandler) BeforeLogout(conn *gev.Connection, client *common.Client) 
 
 }
 
-func NewTaskHandler(autos *config.AutoTasks) *TaskHandler {
-	return &TaskHandler{autos: autos}
+func NewTaskHandler(ctx context.Context, autos *config.AutoTasks) *TaskHandler {
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Tasks.Handler")
+	return &TaskHandler{
+		ctx:   xlog.NewContext(ctx, xl),
+		autos: autos,
+	}
 }

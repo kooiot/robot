@@ -1,23 +1,26 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/client/tasks/hardware"
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type LedsTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.LedsTask
 	handler common.TaskHandler
 	parent  common.Task
 }
 
 func init() {
-	RegisterTask("usb", NewLedsTask)
+	RegisterTask("leds", NewLedsTask)
 }
 
 func (s *LedsTask) Start() error {
@@ -45,14 +48,16 @@ func (s *LedsTask) Stop() error {
 	return nil
 }
 
-func NewLedsTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewLedsTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.LedsTask{}
 	json.Unmarshal(data, &conf)
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.LEDS")
 	return &LedsTask{
 		TaskBase: common.NewTaskBase(info),
+		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
 		parent:   parent,

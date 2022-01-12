@@ -13,7 +13,7 @@ type NamedLed struct {
 
 func (s *NamedLed) Set(value int) error {
 	cmd := "echo \"" + strconv.Itoa(value) + "\" > /sys/class/leds/" + s.name + "/brightness"
-	log.Info(cmd)
+	// log.Info(cmd)
 	_, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
 		log.Error(err.Error())

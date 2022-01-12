@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os/exec"
@@ -8,10 +9,12 @@ import (
 
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type RTCTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.RTCTask
 	handler common.TaskHandler
 }
@@ -52,14 +55,16 @@ func (s *RTCTask) Stop() error {
 	return nil
 }
 
-func NewRTCTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewRTCTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.RTCTask{}
 	json.Unmarshal(data, &conf)
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.RTC")
 	return &RTCTask{
 		TaskBase: common.NewTaskBase(info),
+		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
 	}

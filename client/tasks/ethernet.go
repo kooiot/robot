@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os/exec"
@@ -9,11 +10,12 @@ import (
 	"github.com/go-ping/ping"
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/pkg/net/msg"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type EthernetTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.EthernetTask
 	handler common.TaskHandler
 }
@@ -28,10 +30,11 @@ func (s *EthernetTask) Start() error {
 }
 
 func (s *EthernetTask) run() {
+	xl := xlog.FromContextSafe(s.ctx)
 	cmd := exec.Command("sh", "-c", "sysctl -w net.ipv4.ping_group_range=\"0   2147483647\"")
 	err := cmd.Run()
 	if err != nil {
-		log.Error(err.Error())
+		xl.Error(err.Error())
 	}
 
 	for _, v := range s.config.Init {
@@ -50,7 +53,7 @@ func (s *EthernetTask) run() {
 	}
 	pinger.Count = 3
 
-	log.Info("Ethernet task start ping")
+	xl.Info("Ethernet task start ping")
 	// pinger.SetPrivileged(true)
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
@@ -73,14 +76,16 @@ func (s *EthernetTask) Stop() error {
 	return nil
 }
 
-func NewEthernetTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewEthernetTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.EthernetTask{}
 	json.Unmarshal(data, &conf)
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.Ethernet")
 	return &EthernetTask{
 		TaskBase: common.NewTaskBase(info),
+		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
 	}

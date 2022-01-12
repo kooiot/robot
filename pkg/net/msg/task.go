@@ -1,20 +1,33 @@
 package msg
 
+type StatusType int32
+
+const (
+	ST_NEW    StatusType = 0
+	ST_RUN    StatusType = 1
+	ST_FAILED StatusType = 2
+	ST_DONE   StatusType = 4
+	// ST_SPAWN  StatusType = 8
+)
+
 type Task struct {
 	UUID        string      `mapstructure:"uuid" json:"uuid"`
+	ParentUUID  string      `mapstructure:"parent_uuid" json:"parent_uuid"`
+	Status      StatusType  `mapstructure:"status" json:"status"`
 	Name        string      `mapstructure:"name" json:"name"`
 	Description string      `mapstructure:"desc" json:"desc"`
 	Option      interface{} `mapstructure:"option" json:"option"`
 }
 
-type BatchTask struct {
-	Tasks []Task `mapstructure:"tasks" json:"tasks"`
+type TaskResult struct {
+	Task   *Task       `mapstructure:"task" json:"task"`
+	Result bool        `mapstructure:"result" json:"result"`
+	Info   string      `mapstructure:"info" json:"info"`
+	Detail interface{} `mapstructure:"detail" json:"detail"`
 }
 
-type TaskResult struct {
-	UUID   string `mapstructure:"uuid" json:"uuid"`
-	Result bool   `mapstructure:"result" json:"result"`
-	Info   string `mapstructure:"info" json:"info"`
+type BatchTask struct {
+	Tasks []Task `mapstructure:"tasks" json:"tasks"`
 }
 
 type SerialTask struct {

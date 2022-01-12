@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,18 +12,21 @@ import (
 	"github.com/kooiot/robot/client/tasks"
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/net/protocol"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type Client struct {
+	ctx    context.Context
+	cancel context.CancelFunc
 	config *config.ClientConf
 	conn   *Connection
 	runner *tasks.Runner
 }
 
 func (c *Client) Run() error {
+	xl := xlog.FromContextSafe(c.ctx)
 	c.conn.OnOpen(func() {
-		log.Info("client opened")
+		xl.Info("client opened")
 		go c.OnRun()
 	})
 
@@ -34,6 +38,7 @@ func (c *Client) Run() error {
 }
 
 func (c *Client) OnRun() {
+	xl := xlog.FromContextSafe(c.ctx)
 	var buffer []byte
 	login := false
 	for {
@@ -51,7 +56,7 @@ func (c *Client) OnRun() {
 				Hardware: "ARM v7",
 				System:   "OpenWRT",
 			}
-			log.Info("Send login: %v", login)
+			xl.Info("Send login: %v", login)
 
 			data, err := json.Marshal(login)
 			if err != nil {
@@ -63,7 +68,7 @@ func (c *Client) OnRun() {
 				ClientID: name,
 				ID:       0,
 			}
-			log.Info("Send logout: %v", logout)
+			xl.Info("Send logout: %v", logout)
 
 			data, err := json.Marshal(logout)
 			if err != nil {
@@ -79,43 +84,83 @@ func (c *Client) OnRun() {
 	}
 }
 
+func (c *Client) SendResult(task *msg.Task, result *msg.TaskResult) error {
+	xl := xlog.FromContextSafe(c.ctx)
+	xl.Info("Send result: %#v", result)
+	var buffer []byte
+
+	str, err := json.Marshal(result)
+	if err != nil {
+		panic(err)
+	}
+	buffer = protocol.PackMessage("task.result", str)
+
+	_, err = c.conn.Write(buffer)
+	return err
+}
+
+func (c *Client) SendTaskUpdate(task *msg.Task) error {
+	xl := xlog.FromContextSafe(c.ctx)
+	var buffer []byte
+	xl.Info("Send task: %#v", task)
+
+	str, err := json.Marshal(task)
+	if err != nil {
+		panic(err)
+	}
+	buffer = protocol.PackMessage("task.update", str)
+
+	_, err = c.conn.Write(buffer)
+	return err
+}
+
 func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
+	xl := xlog.FromContextSafe(c.ctx)
 	msgType := ctx.(string)
 
 	switch msgType {
 	case "login_resp":
 		msg := msg.LoginResp{}
 		if err := json.Unmarshal(data, &msg); err != nil {
-			log.Info(err.Error())
+			xl.Info(err.Error())
 		}
-		log.Info("%s: %v", msgType, msg)
+		xl.Info("%s: %v", msgType, msg)
 	case "logout_resp":
 		msg := msg.Response{}
 		if err := json.Unmarshal(data, &msg); err != nil {
-			log.Info(err.Error())
+			xl.Info(err.Error())
 		}
-		log.Info("%s: %v", msgType, msg)
+		xl.Info("%s: %v", msgType, msg)
 	case "task":
 		msg := msg.Task{}
 		if err := json.Unmarshal(data, &msg); err != nil {
-			log.Info(err.Error())
+			xl.Info(err.Error())
 		}
-		log.Info("%s: %v", msgType, msg)
+		xl.Info("%s: %v", msgType, msg)
 		c.runner.Add(&msg, nil)
 	default:
-		log.Info("unknown msg type %s", msgType)
+		xl.Info("unknown msg type %s", msgType)
 	}
 
 	return nil
 }
 
+func (c *Client) Close() {
+	c.conn.Close()
+	c.cancel()
+}
+
 func NewClient(cfg *config.ClientConf) *Client {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	cli := new(Client)
 	cli.config = cfg
-	cli.runner = tasks.NewRunner()
+	cli.runner = tasks.NewRunner(ctx, &cfg.Runner, cli)
+	cli.ctx = xlog.NewContext(ctx, xlog.New())
+	cli.cancel = cancel
 
 	addr := cfg.Common.Addr + ":" + strconv.Itoa(cfg.Common.Port)
-	conn := NewConnection(addr)
+	conn := NewConnection(ctx, addr)
 	cli.conn = conn
 
 	return cli

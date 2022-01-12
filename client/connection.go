@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"context"
 	"net"
 
 	"github.com/Allenxuxu/ringbuffer"
@@ -13,6 +14,7 @@ type Connection struct {
 	onMessageCallback func(ctx interface{}, data []byte) (out interface{})
 	onErrorCallback   func(err error)
 
+	ctx       context.Context
 	Conn      net.Conn
 	Address   string
 	Connected bool
@@ -87,8 +89,9 @@ func (conn *Connection) read() {
 	}
 }
 
-func NewConnection(address string) *Connection {
+func NewConnection(ctx context.Context, address string) *Connection {
 	conn := &Connection{
+		ctx:       ctx,
 		Address:   address,
 		Connected: false,
 		buffer:    ringbuffer.New(0),

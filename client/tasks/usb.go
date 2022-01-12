@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"os/exec"
@@ -10,10 +11,12 @@ import (
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/client/tasks/hardware"
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type USBTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.USBTask
 	handler common.TaskHandler
 }
@@ -135,14 +138,16 @@ func (s *USBTask) Stop() error {
 	return nil
 }
 
-func NewUSBTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewUSBTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.USBTask{}
 	json.Unmarshal(data, &conf)
 	// log.Info("USB Task: %#v from: %#v", conf, info.Option)
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.USB")
 
 	return &USBTask{
+		ctx:      xlog.NewContext(ctx, xl),
 		TaskBase: common.NewTaskBase(info),
 		config:   conf,
 		handler:  handler,

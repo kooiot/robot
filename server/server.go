@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"path"
 	"strconv"
@@ -9,13 +10,15 @@ import (
 	"github.com/Allenxuxu/gev"
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/net/protocol"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/xlog"
 	"github.com/kooiot/robot/server/common"
 	"github.com/kooiot/robot/server/config"
 	"github.com/kooiot/robot/server/tasks"
 )
 
 type Server struct {
+	ctx         context.Context
+	cancel      context.CancelFunc
 	config      *config.ServerConf
 	config_file string
 	server      *gev.Server
@@ -24,19 +27,22 @@ type Server struct {
 }
 
 func (s *Server) OnConnect(c *gev.Connection) {
-	log.Info("client connected: %s", c.PeerAddr())
+	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("client connected: %s", c.PeerAddr())
 }
 
 func (s *Server) AfterLogin(conn *gev.Connection, client *common.Client) {
+	xl := xlog.FromContextSafe(s.ctx)
 	time.Sleep(1 * time.Second)
 
-	log.Info("AfterLogin %s", conn.PeerAddr())
+	xl.Info("AfterLogin %s", conn.PeerAddr())
 	for _, h := range s.handlers {
 		h.AfterLogin(conn, client)
 	}
 }
 
 func (s *Server) HandleLogin(c *gev.Connection, req *msg.Login) interface{} {
+	xl := xlog.FromContextSafe(s.ctx)
 	resp := msg.LoginResp{
 		ClientID: req.ClientID,
 		ID:       999,
@@ -49,7 +55,7 @@ func (s *Server) HandleLogin(c *gev.Connection, req *msg.Login) interface{} {
 
 	data, err := json.Marshal(resp)
 	if err != nil {
-		log.Error("failed encode resp: %s", err)
+		xl.Error("failed encode resp: %s", err)
 		return nil
 	} else {
 		go s.AfterLogin(c, &client)
@@ -57,23 +63,36 @@ func (s *Server) HandleLogin(c *gev.Connection, req *msg.Login) interface{} {
 	}
 }
 
+func (s *Server) HandleTaskUpdate(c *gev.Connection, req *msg.Task) interface{} {
+	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("received task: %#v", req)
+	return nil
+}
+
+func (s *Server) HandleTaskResult(c *gev.Connection, req *msg.TaskResult) interface{} {
+	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("received result: %#v", req)
+	return nil
+}
+
 func (s *Server) OnMessage(c *gev.Connection, ctx interface{}, data []byte) interface{} {
+	xl := xlog.FromContextSafe(s.ctx)
 	msgType := ctx.(string)
 
 	switch msgType {
 	case "login":
 		req := msg.Login{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			log.Error(err.Error())
+			xl.Error(err.Error())
 		}
-		log.Trace("received %s: %v", msgType, req)
+		xl.Trace("received %s: %v", msgType, req)
 		return s.HandleLogin(c, &req)
 	case "logout":
 		req := msg.Logout{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			log.Error(err.Error())
+			xl.Error(err.Error())
 		}
-		log.Trace("received %s: %v", msgType, req)
+		xl.Trace("received %s: %v", msgType, req)
 
 		resp := &msg.Response{
 			Content: "OK",
@@ -81,29 +100,45 @@ func (s *Server) OnMessage(c *gev.Connection, ctx interface{}, data []byte) inte
 
 		data, err := json.Marshal(resp)
 		if err != nil {
-			log.Error("failed encode resp: %s", err)
+			xl.Error("failed encode resp: %s", err)
 		} else {
 			return protocol.PackMessage("logout_resp", data)
 		}
+	case "task.update":
+		req := msg.Task{}
+		if err := json.Unmarshal(data, &req); err != nil {
+			xl.Error(err.Error())
+		}
+		xl.Trace("received %s: %v", msgType, req)
+		return s.HandleTaskUpdate(c, &req)
+	case "task.result":
+		req := msg.TaskResult{}
+		if err := json.Unmarshal(data, &req); err != nil {
+			xl.Error(err.Error())
+		}
+		xl.Trace("received %s: %v", msgType, req)
+		return s.HandleTaskResult(c, &req)
 	default:
-		log.Error("unknown msg type %s", msgType)
+		xl.Error("unknown msg type %s", msgType)
 	}
 
 	return nil
 }
 
 func (s *Server) OnClose(c *gev.Connection) {
-	log.Info("client connection closed %s", c.PeerAddr())
+	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("client connection closed %s", c.PeerAddr())
 }
 
 func (s *Server) Run() error {
-	log.Info("server start")
+	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("server start")
 	s.server.Start()
 	return nil
 }
 
 func (s *Server) Init() error {
-	h := tasks.NewTaskHandler(&s.config.Tasks)
+	h := tasks.NewTaskHandler(s.ctx, &s.config.Tasks)
 	err := h.Init(s)
 	if err != nil {
 		return err
@@ -118,12 +153,16 @@ func (s *Server) ConfigDir() string {
 }
 
 func NewServer(cfg *config.ServerConf, cfgFile string) *Server {
+	ctx, cancel := context.WithCancel(context.Background())
 	handler := &Server{
+		ctx:         xlog.NewContext(ctx, xlog.New()),
+		cancel:      cancel,
 		config:      cfg,
 		config_file: cfgFile,
 	}
+	xl := xlog.FromContextSafe(handler.ctx)
 	bind_addr := cfg.Common.Bind + ":" + strconv.Itoa(cfg.Common.Port)
-	log.Info("Bind on: %s", bind_addr)
+	xl.Info("Bind on: %s", bind_addr)
 	s, err := gev.NewServer(handler,
 		gev.Network("tcp"),
 		gev.Address(bind_addr),

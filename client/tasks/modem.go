@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os/exec"
@@ -9,12 +10,13 @@ import (
 	"github.com/go-ping/ping"
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/pkg/net/msg"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/xlog"
 	uuid "github.com/satori/go.uuid"
 )
 
 type ModemTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.ModemTask
 	handler common.TaskHandler
 }
@@ -29,10 +31,11 @@ func (s *ModemTask) Start() error {
 }
 
 func (s *ModemTask) run() {
+	xl := xlog.FromContextSafe(s.ctx)
 	cmd := exec.Command("sh", "-c", "sysctl -w net.ipv4.ping_group_range=\"0   2147483647\"")
 	err := cmd.Run()
 	if err != nil {
-		log.Error(err.Error())
+		xl.Error(err.Error())
 	}
 
 	time.Sleep(5 * time.Second)
@@ -42,7 +45,7 @@ func (s *ModemTask) run() {
 	}
 	pinger.Count = 3
 
-	log.Info("Modem task start ping")
+	xl.Info("Modem task start ping")
 	// pinger.SetPrivileged(true)
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
@@ -76,14 +79,16 @@ func (s *ModemTask) Stop() error {
 	return nil
 }
 
-func NewModemTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewModemTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.ModemTask{}
 	json.Unmarshal(data, &conf)
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.Modem")
 	return &ModemTask{
 		TaskBase: common.NewTaskBase(info),
+		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
 	}

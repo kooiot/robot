@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/kooiot/robot/client/common"
@@ -8,10 +9,12 @@ import (
 	"github.com/kooiot/robot/client/port"
 	"github.com/kooiot/robot/client/port/serial"
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type SerialTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.SerialTask
 	handler common.TaskHandler
 
@@ -43,7 +46,7 @@ func (s *SerialTask) Stop() error {
 	return nil
 }
 
-func NewSerialTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewSerialTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.SerialTask{}
@@ -63,15 +66,18 @@ func NewSerialTask(handler common.TaskHandler, info *msg.Task, parent common.Tas
 	src_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
 	dest_config := helper.PingPongConfig{IsPing: false, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.Serial")
+
 	t := &SerialTask{
 		TaskBase: common.NewTaskBase(info),
+		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
 		src_port: src,
 		dst_port: dest,
 	}
 
-	t.src = helper.NewPingPong(t, handler, src_config, src_stream)
-	t.dst = helper.NewPingPong(t, handler, dest_config, dest_stream)
+	t.src = helper.NewPingPong(ctx, t, handler, src_config, src_stream)
+	t.dst = helper.NewPingPong(ctx, t, handler, dest_config, dest_stream)
 	return t
 }

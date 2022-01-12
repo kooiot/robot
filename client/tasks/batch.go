@@ -1,16 +1,18 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/pkg/net/msg"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type BatchTask struct {
 	common.TaskBase
+	ctx     context.Context
 	config  msg.BatchTask
 	handler common.TaskHandler
 }
@@ -20,12 +22,14 @@ func init() {
 }
 
 func (s *BatchTask) Start() error {
+	xl := xlog.FromContextSafe(s.ctx)
+
 	r, ok := s.handler.(*Runner)
 	if !ok {
 		return errors.New("error object")
 	}
 	for _, t := range s.config.Tasks {
-		log.Info("%s: create sub task:%s", s.Info.Name, t.Name)
+		xl.Info("%s: create sub task:%s", s.Info.Name, t.Name)
 		r.Add(&t, s)
 	}
 	return nil
@@ -35,14 +39,16 @@ func (s *BatchTask) Stop() error {
 	return nil
 }
 
-func NewBatchTask(handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewBatchTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.BatchTask{}
 	json.Unmarshal(data, &conf)
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.Batch")
 	return &BatchTask{
 		TaskBase: common.NewTaskBase(info),
+		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
 	}

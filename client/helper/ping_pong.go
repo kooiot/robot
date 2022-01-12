@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"math/rand"
@@ -11,7 +12,8 @@ import (
 	"github.com/Allenxuxu/toolkit/sync/atomic"
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/client/port"
-	"github.com/kooiot/robot/pkg/util/log"
+	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/xlog"
 	"github.com/npat-efault/crc16"
 )
 
@@ -22,6 +24,7 @@ type PingPongConfig struct {
 }
 
 type PingPong struct {
+	ctx     context.Context
 	Config  PingPongConfig      `json:"config"`
 	Result  common.StreamResult `json:"result"`
 	task    common.Task
@@ -54,7 +57,7 @@ func (c *PingPong) genMsg() []byte {
 	if data_len < 16 {
 		data_len = 16 + rand.Intn(16)
 	}
-	// log.Info("PingPong generate msg len: %d", data_len)
+	// xl.Info("PingPong generate msg len: %d", data_len)
 
 	buf := make([]byte, data_len)
 	for i := 0; i < data_len; i++ {
@@ -80,6 +83,7 @@ func (c *PingPong) genMsg() []byte {
 }
 
 func (c *PingPong) run() error {
+	xl := xlog.FromContextSafe(c.ctx)
 	c.Result.SendSpeed = 0
 	c.Result.RecvSpeed = 0
 	if c.Config.IsPing {
@@ -90,19 +94,19 @@ func (c *PingPong) run() error {
 	err_total := 0
 	begin_time := time.Now()
 
-	log.Info("PingPong test start. config: %#v", c.Config)
+	xl.Info("PingPong test start. config: %#v", c.Config)
 
-	msg := make([]byte, 0)
+	reqMsg := make([]byte, 0)
 
 	for i := 0; i < c.Config.Count; i++ {
 		if c.stop.Get() {
 			break
 		}
 		if c.Config.IsPing {
-			msg = c.genMsg()
+			reqMsg = c.genMsg()
 		}
-		send_total += len(msg)
-		recv, err := c.stream.Request(msg, func(buffer *ringbuffer.RingBuffer) ([]byte, error) {
+		send_total += len(reqMsg)
+		recv, err := c.stream.Request(reqMsg, func(buffer *ringbuffer.RingBuffer) ([]byte, error) {
 			// Try to find the SK
 			for {
 				data := buffer.Bytes()
@@ -113,11 +117,11 @@ func (c *PingPong) run() error {
 				// Find SK
 				sk_i := bytes.Index(data, SK)
 				if sk_i > 0 {
-					log.Error("SK checking error %d", sk_i)
+					xl.Error("SK checking error %d", sk_i)
 					err_total += sk_i
 					buffer.Retrieve(sk_i)
 				} else if sk_i < 0 {
-					log.Error("SK Find None %d", len(data))
+					xl.Error("SK Find None %d", len(data))
 					err_total += len(data) - 3
 					buffer.Retrieve(len(data) - 3)
 					return nil, nil
@@ -129,39 +133,39 @@ func (c *PingPong) run() error {
 
 			// Read len
 			data_len := binary.BigEndian.Uint16(data[3:5])
-			// log.Info("PingPong recv msg len: %d", data_len)
+			// xl.Info("PingPong recv msg len: %d", data_len)
 
 			if len(data) < hdr_len+end_len+int(data_len) {
-				// log.Info("len:%d data_len:%d", len(data), hdr_len+end_len+int(data_len))
+				// xl.Info("len:%d data_len:%d", len(data), hdr_len+end_len+int(data_len))
 				return nil, nil
 			}
 
 			if !bytes.Equal(EK, data[hdr_len+int(data_len)+2:hdr_len+int(data_len)+5]) {
-				log.Error("EK Check Error %d", len(data))
+				xl.Error("EK Check Error %d", len(data))
 				err_total += 1
 				buffer.Retrieve(1)
 				return nil, nil
 			} else {
 				// Retrieve buffer
 				buffer.Retrieve(hdr_len + end_len + int(data_len))
-				// log.Info("left size: %d", buffer.Length())
+				// xl.Info("left size: %d", buffer.Length())
 
 				h := crc16.New(crc16.Modbus)
 				h.Write(data[hdr_len : hdr_len+int(data_len)])
 				crc_16 := binary.BigEndian.Uint16(data[hdr_len+int(data_len) : hdr_len+int(data_len)+2])
 				if crc_16 != h.Sum16() {
 					err_total += hdr_len + end_len + int(data_len)
-					log.Error("crc checking error")
+					xl.Error("crc checking error")
 					return nil, errors.New("crc checking error")
 				} else {
-					// log.Info("crc checking done: %x", crc_16)
+					// xl.Info("crc checking done: %x", crc_16)
 				}
 				return data[0 : hdr_len+end_len+int(data_len)], nil
 			}
 		}, time.Millisecond*1000)
 
 		if err != nil {
-			log.Error("resp error:%s", err.Error())
+			xl.Error("resp error:%s", err.Error())
 			c.Result.Failed += 1
 		} else {
 			c.Result.Passed += 1
@@ -170,13 +174,13 @@ func (c *PingPong) run() error {
 
 		c.Result.Count += 1
 		if !c.Config.IsPing {
-			// log.Info("write back len: %d", len(recv))
-			msg = recv
+			// xl.Info("write back len: %d", len(recv))
+			reqMsg = recv
 		}
 	}
-	if len(msg) > 0 && !c.Config.IsPing {
+	if len(reqMsg) > 0 && !c.Config.IsPing {
 		// Write last recv
-		c.stream.Send(msg, 100)
+		c.stream.Send(reqMsg, 100)
 	}
 
 	c.Result.ErrBytes = err_total
@@ -185,13 +189,13 @@ func (c *PingPong) run() error {
 	c.Result.SendSpeed = float64(send_total) / time.Since(begin_time).Seconds()
 	c.Result.RecvSpeed = float64(recv_total) / time.Since(begin_time).Seconds()
 
-	log.Info("PingPong test finished: %#v", c.Result)
-	result := common.TaskResult{
+	xl.Info("PingPong test finished: %#v", c.Result)
+	result := msg.TaskResult{
 		Result: true,
-		Error:  "Done",
-		Info:   c.Result,
+		Info:   "Done",
+		Detail: c.Result,
 	}
-	c.handler.OnResult(c.task, result)
+	c.handler.OnResult(c.task, &result)
 
 	// Stop stream
 	defer c.stream.Stop()
@@ -199,12 +203,14 @@ func (c *PingPong) run() error {
 	return nil
 }
 
-func NewPingPong(task common.Task, handler common.TaskHandler, c PingPongConfig, stream *port.Stream) *PingPong {
+func NewPingPong(ctx context.Context, task common.Task, handler common.TaskHandler, c PingPongConfig, stream *port.Stream) *PingPong {
 	if c.MaxMsgSize == 0 {
 		c.MaxMsgSize = 512
 	}
 
+	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("PingPong")
 	o := PingPong{
+		ctx:     xlog.NewContext(ctx, xl),
 		Config:  c,
 		task:    task,
 		handler: handler,
