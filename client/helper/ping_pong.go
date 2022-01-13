@@ -165,7 +165,7 @@ func (c *PingPong) run() error {
 		}, time.Millisecond*1000)
 
 		if err != nil {
-			xl.Error("resp error:%s", err.Error())
+			xl.Error("resp error: %s", err.Error())
 			c.Result.Failed += 1
 		} else {
 			c.Result.Passed += 1

@@ -49,13 +49,12 @@ func (conn *Connection) WriteString(message string) (n int, err error) {
 }
 
 func (conn *Connection) Run() error {
-	c, err := net.Dial("tcp", conn.Address)
+	c, err := net.DialTimeout("tcp", conn.Address, 3*time.Second)
 
 	if err != nil {
 		conn.onErrorCallback(err)
 		return err
 	} else {
-		c.SetReadDeadline(time.Now().Add(10 * time.Second))
 		defer c.Close()
 		conn.Conn = c
 

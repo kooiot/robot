@@ -194,7 +194,8 @@ func (c *Client) send_message(msg_type string, msg_data interface{}) error {
 
 	data, err := json.Marshal(msg_data)
 	if err != nil {
-		panic(err)
+		xl.Error("JSON.Marshal failure: %s", err.Error())
+		return err
 	}
 	c.send_chn <- &msg.Message{CTX: msg_type, Data: data}
 	return nil
@@ -245,7 +246,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 	case "login_resp":
 		req := msg.LoginResp{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Error(err.Error())
+			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
 		xl.Debug("%s: %v", msgType, req)
 		c.client_id = req.ID
@@ -253,20 +254,20 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 	case "logout_resp":
 		req := msg.Response{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Error(err.Error())
+			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
 		xl.Debug("%s: %v", msgType, req)
 	case "heartbeat":
 		req := msg.HeartBeat{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Error(err.Error())
+			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
 		c.last_heartbeat = time.Now()
 		xl.Debug("%s: %v", msgType, req)
 	case "task":
 		req := msg.Task{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Error(err.Error())
+			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
 		xl.Debug("%s: %v", msgType, req)
 		c.runner.Add(&req, nil)

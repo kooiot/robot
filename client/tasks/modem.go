@@ -35,13 +35,15 @@ func (s *ModemTask) run() {
 	cmd := exec.Command("sh", "-c", "sysctl -w net.ipv4.ping_group_range=\"0   2147483647\"")
 	err := cmd.Run()
 	if err != nil {
-		xl.Error(err.Error())
+		s.handler.OnError(s, err)
+		return
 	}
 
 	time.Sleep(5 * time.Second)
 	pinger, err := ping.NewPinger(s.config.PingAddr)
 	if err != nil {
-		panic(err)
+		s.handler.OnError(s, errors.New("pinger initialization failure"))
+		return
 	}
 	pinger.Count = 3
 

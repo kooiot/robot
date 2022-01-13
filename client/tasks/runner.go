@@ -219,7 +219,7 @@ func (r *Runner) Halt() error {
 	if r.conf.Haltable {
 		_, err := exec.Command("sh", "-c", "sleep 3 && halt").Output()
 		if err != nil {
-			xl.Error(err.Error())
+			xl.Error("System halt error: %s", err.Error())
 			return err
 		}
 	}

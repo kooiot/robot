@@ -39,7 +39,7 @@ func (s *SerialPort) Open() error {
 	log.Info("Serial open %s with :%#v", s.port, s.mode)
 	p, err := serial.Open(s.port, s.mode)
 	if err != nil {
-		log.Error("Serial open failed:%s", err.Error())
+		log.Error("Serial open failed: %s", err.Error())
 		s.handler.OnOpen(s, err)
 		return err
 	}
@@ -88,7 +88,7 @@ func (s *SerialPort) read() {
 
 		err = s.handler.OnMessage(buf[:num])
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("Serial message process error: %s", err.Error())
 		}
 	}
 }

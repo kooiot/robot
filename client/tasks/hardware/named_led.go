@@ -16,7 +16,7 @@ func (s *NamedLed) Set(value int) error {
 	// log.Info(cmd)
 	_, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("Echo led error: %s", err.Error())
 		return err
 	}
 	return nil
