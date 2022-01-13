@@ -72,7 +72,7 @@ func (h *TaskHandler) parseTask(file_path string) (msg.BatchTask, error) {
 		v.Option = toStringMap(v.Option)
 		new_bt.Tasks = append(new_bt.Tasks, v)
 	}
-	xl.Info("Task loaded: %#v", new_bt)
+	xl.Debug("Task loaded: %#v", new_bt)
 	return new_bt, nil
 }
 
@@ -104,9 +104,9 @@ func matchString(pat string, value string) bool {
 
 	m_list := m.FindStringSubmatch(value)
 	// if m_list == nil {
-	// 	xl.Info("Not matched %s - %s", pat, value)
+	// 	xl.Debug("Not matched %s - %s", pat, value)
 	// } else {
-	// 	xl.Info("Task matched %s - %s", pat, value)
+	// 	xl.Debug("Task matched %s - %s", pat, value)
 	// }
 	return m_list != nil
 }
@@ -134,7 +134,7 @@ func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 			}
 		}
 		if found {
-			xl.Info("Fire task to: %s - %#v", client.Info.ClientID, t.Task)
+			xl.Debug("Fire task to: %s - %#v", client.Info.ClientID, t.Task)
 			task := msg.Task{
 				// UUID:        uuid.NewV4().String(),
 				Name:        "batch",
@@ -146,7 +146,7 @@ func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 				xl.Error("failed encode resp: %s", err)
 				xl.Error("resp: %#v", task)
 			} else {
-				xl.Info("Fire task json %s", data)
+				xl.Debug("Fire task json %s", data)
 				conn.Send(protocol.PackMessage("task", data))
 			}
 		}

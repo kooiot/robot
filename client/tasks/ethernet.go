@@ -53,7 +53,7 @@ func (s *EthernetTask) run() {
 	}
 	pinger.Count = 3
 
-	xl.Info("Ethernet task start ping")
+	xl.Debug("Ethernet task start ping")
 	// pinger.SetPrivileged(true)
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.

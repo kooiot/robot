@@ -1,5 +1,10 @@
 package msg
 
+type Message struct {
+	CTX  interface{} `json:"ctx"`
+	Data []byte      `json:"data"`
+}
+
 type Login struct {
 	ClientID string `json:"client_id"`
 	User     string `json:"user"`

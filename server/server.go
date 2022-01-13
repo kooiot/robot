@@ -35,7 +35,7 @@ func (s *Server) AfterLogin(conn *gev.Connection, client *common.Client) {
 	xl := xlog.FromContextSafe(s.ctx)
 	time.Sleep(1 * time.Second)
 
-	xl.Info("AfterLogin %s", conn.PeerAddr())
+	xl.Debug("AfterLogin %s", conn.PeerAddr())
 	for _, h := range s.handlers {
 		h.AfterLogin(conn, client)
 	}
@@ -73,7 +73,7 @@ func (s *Server) HandleHeartbeat(c *gev.Connection, req *msg.HeartBeat) interfac
 		ID:   req.ID,
 		Time: time.Now().UTC().Unix(),
 	}
-	xl.Info("Send back: %v", resp)
+	// xl.Debug("Send back: %v", resp)
 
 	data, err := json.Marshal(resp)
 	if err != nil {

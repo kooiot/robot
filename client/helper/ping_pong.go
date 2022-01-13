@@ -94,7 +94,7 @@ func (c *PingPong) run() error {
 	err_total := 0
 	begin_time := time.Now()
 
-	xl.Info("PingPong test start. config: %#v", c.Config)
+	xl.Debug("PingPong test start. config: %#v", c.Config)
 
 	reqMsg := make([]byte, 0)
 
@@ -189,7 +189,7 @@ func (c *PingPong) run() error {
 	c.Result.SendSpeed = float64(send_total) / time.Since(begin_time).Seconds()
 	c.Result.RecvSpeed = float64(recv_total) / time.Since(begin_time).Seconds()
 
-	xl.Info("PingPong test finished: %#v", c.Result)
+	xl.Debug("PingPong test finished: %#v", c.Result)
 	result := msg.TaskResult{
 		Result: true,
 		Info:   "Done",

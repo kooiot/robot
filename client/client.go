@@ -3,94 +3,201 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"net"
+	"runtime/debug"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/kooiot/robot/client/config"
 	"github.com/kooiot/robot/client/tasks"
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/net/protocol"
+	"github.com/kooiot/robot/pkg/util/shutdown"
 	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
 type Client struct {
-	ctx            context.Context
-	cancel         context.CancelFunc
-	lock           sync.Mutex
-	config         *config.ClientConf
-	conn           *Connection
-	runner         *tasks.Runner
-	client_id      int32
+	ctx context.Context
+
+	xl *xlog.Logger
+
+	config *config.ClientConf
+
+	// Client connection
+	conn *Connection
+
+	// write to this channel to write the message sent to server
+	send_chn chan (*msg.Message)
+	// read from this channel to get the next message sent by server
+	read_chn chan (*msg.Message)
+	// goroutines can block by reading from this channel, it will be closed only in reader() when control connection is closed
+	closed_chn chan struct{}
+	// closing done event
+	closed_done_chn chan struct{}
+	// connection ready event
+	connected_chn chan struct{}
+
+	// Task Runner
+	runner *tasks.Runner
+	// Client ID
+	client_id int32
+	// Heartbeat
 	last_heartbeat time.Time
+
+	readerShutdown     *shutdown.Shutdown
+	writerShutdown     *shutdown.Shutdown
+	msgHandlerShutdown *shutdown.Shutdown
+}
+
+func (c *Client) newConn() (*Connection, error) {
+	xl := c.xl
+
+	cfg := c.config
+	addr := net.JoinHostPort(cfg.Common.Addr, strconv.Itoa(cfg.Common.Port))
+	xl.Info("Connect to %s", addr)
+
+	conn := NewConnection(c.ctx, addr)
+
+	conn.OnOpen(func() {
+		err := c.send_login()
+		if err != nil {
+			xl.Error("Failed to login: %s", err.Error())
+			c.conn.Close()
+		}
+	})
+
+	conn.OnMessage(func(ctx interface{}, data []byte) (out interface{}) {
+		c.read_chn <- &msg.Message{
+			CTX:  ctx,
+			Data: data,
+		}
+		return nil
+	})
+	conn.OnError(func(err error) {
+		xl.Error("Connection closed: %s", err.Error())
+		close(c.closed_chn)
+	})
+
+	return conn, nil
 }
 
 func (c *Client) Run() error {
-	xl := xlog.FromContextSafe(c.ctx)
-	c.conn.OnOpen(func() {
-		xl.Info("client opened")
-		go c.OnRun()
-	})
+	conn, err := c.newConn()
+	if err != nil {
+		return err
+	}
 
-	c.conn.OnMessage(func(ctx interface{}, data []byte) (out interface{}) {
-		return c.OnMessage(ctx, data)
-	})
+	c.conn = conn
 
-	return c.conn.Run()
+	go c.worker()
+
+	return nil
 }
 
-func (c *Client) OnRun() {
-	xl := xlog.FromContextSafe(c.ctx)
+// reader read all messages from frps and send to readCh
+func (c *Client) reader() {
+	xl := c.xl
+	defer func() {
+		if err := recover(); err != nil {
+			xl.Error("panic error: %v", err)
+			xl.Error(string(debug.Stack()))
+		}
+	}()
+	defer c.readerShutdown.Done()
+	defer close(c.closed_chn)
 
-	c.lock.Lock()
-	c.client_id = -1
-	c.last_heartbeat = time.Now().UTC()
-	c.lock.Unlock()
+	c.conn.Run()
+}
 
-	timeout := 100 * time.Millisecond
+// writer writes messages got from sendCh to frps
+func (c *Client) writer() {
+	xl := c.xl
+	defer c.writerShutdown.Done()
 	for {
-		time.Sleep(timeout)
-
-		if c.client_id < 0 {
-			err := c.send_login()
-			if err != nil {
-				xl.Error("Failed to login: %s", err.Error())
-				timeout = timeout * 2
-				if timeout > time.Second*30 {
-					timeout = 100 * time.Millisecond
-				}
-			} else {
-				timeout = time.Second
-				time.Sleep(3 * time.Second)
-			}
+		m, ok := <-c.send_chn
+		if !ok {
+			xl.Info("send channel closed!")
+			break
 		} else {
-			if time.Since(c.last_heartbeat) > 60*time.Second {
-				err := c.send_heartbeat()
-				if err == nil {
-					c.last_heartbeat = c.last_heartbeat.Add(3 * time.Second)
-				}
+			if err := c.write_conn(m); err != nil {
+				xl.Error("Send message failed: %s", err.Error())
 			}
 		}
 	}
 }
 
+func (c *Client) worker() {
+	go c.msgHandler()
+	go c.reader()
+	go c.writer()
+
+	<-c.closed_chn
+
+	close(c.read_chn)
+	c.readerShutdown.WaitDone()
+	c.msgHandlerShutdown.WaitDone()
+
+	close(c.send_chn)
+	c.writerShutdown.WaitDone()
+
+	close(c.closed_done_chn)
+}
+
+func (c *Client) msgHandler() {
+	xl := c.xl
+	defer func() {
+		if err := recover(); err != nil {
+			xl.Error("panic error: %v", err)
+			xl.Error(string(debug.Stack()))
+		}
+	}()
+	defer c.msgHandlerShutdown.Done()
+
+	hbSend := time.NewTicker(60 * time.Second)
+	defer hbSend.Stop()
+	hbCheck := time.NewTicker(time.Second)
+	defer hbCheck.Stop()
+
+	c.last_heartbeat = time.Now()
+
+	for {
+		select {
+		case <-hbSend.C:
+			c.send_heartbeat()
+		case <-hbCheck.C:
+			if time.Since(c.last_heartbeat) > 90*time.Second {
+				xl.Warn("heartbeat timeout")
+				// let reader() stop
+				c.conn.Close()
+				return
+			}
+		case m, ok := <-c.read_chn:
+			if !ok {
+				return
+			}
+			c.OnMessage(m.CTX, m.Data)
+		}
+	}
+}
+
+func (c *Client) write_conn(m *msg.Message) error {
+	buffer := protocol.PackMessage(m.CTX.(string), m.Data)
+
+	_, err := c.conn.Write(buffer)
+
+	return err
+}
+
 func (c *Client) send_message(msg_type string, msg_data interface{}) error {
-	xl := xlog.FromContextSafe(c.ctx)
+	xl := c.xl
 	xl.Debug("Send %s: %#v", msg_type, msg_data)
 
 	data, err := json.Marshal(msg_data)
 	if err != nil {
 		panic(err)
 	}
-	buffer := protocol.PackMessage(msg_type, data)
-
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	_, err = c.conn.Write(buffer)
-
-	// xl.Info("Send %s done", msg_type)
-
-	return err
+	c.send_chn <- &msg.Message{CTX: msg_type, Data: data}
+	return nil
 }
 
 func (c *Client) send_login() error {
@@ -130,69 +237,75 @@ func (c *Client) SendTaskUpdate(task *msg.Task) error {
 }
 
 func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
-	xl := xlog.FromContextSafe(c.ctx)
+	xl := c.xl
 	msgType := ctx.(string)
 	xl.Debug("On Message: %s", msgType)
-
-	c.lock.Lock()
-	defer c.lock.Unlock()
 
 	switch msgType {
 	case "login_resp":
 		req := msg.LoginResp{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Info(err.Error())
+			xl.Error(err.Error())
 		}
 		xl.Debug("%s: %v", msgType, req)
 		c.client_id = req.ID
+		close(c.connected_chn)
 	case "logout_resp":
 		req := msg.Response{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Info(err.Error())
+			xl.Error(err.Error())
 		}
 		xl.Debug("%s: %v", msgType, req)
 	case "heartbeat":
 		req := msg.HeartBeat{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Info(err.Error())
+			xl.Error(err.Error())
 		}
-		c.last_heartbeat = time.Now().UTC()
+		c.last_heartbeat = time.Now()
 		xl.Debug("%s: %v", msgType, req)
 	case "task":
 		req := msg.Task{}
 		if err := json.Unmarshal(data, &req); err != nil {
-			xl.Info(err.Error())
+			xl.Error(err.Error())
 		}
-		xl.Info("%s: %v", msgType, req)
-		go c.runner.Add(&req, nil)
+		xl.Debug("%s: %v", msgType, req)
+		c.runner.Add(&req, nil)
 	default:
-		xl.Info("unknown msg type %s", msgType)
+		xl.Error("unknown msg type %s", msgType)
 	}
 
 	return nil
 }
 
-func (c *Client) Close() {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	c.send_logout()
-	c.conn.Close()
-	c.cancel()
+func (c *Client) ConnectedChn() <-chan struct{} {
+	return c.connected_chn
 }
 
-func NewClient(cfg *config.ClientConf) *Client {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *Client) ClosedDoneChn() <-chan struct{} {
+	return c.closed_done_chn
+}
 
-	cli := new(Client)
-	cli.config = cfg
+func (c *Client) Close() {
+	c.send_logout()
+	time.Sleep(time.Second)
+	c.conn.Close()
+}
+
+func NewClient(cfg *config.ClientConf, ctx context.Context) *Client {
+	cli := &Client{
+		config:             cfg,
+		ctx:                ctx,
+		xl:                 xlog.FromContextSafe(ctx),
+		send_chn:           make(chan *msg.Message, 100),
+		read_chn:           make(chan *msg.Message, 100),
+		closed_chn:         make(chan struct{}),
+		closed_done_chn:    make(chan struct{}),
+		connected_chn:      make(chan struct{}),
+		readerShutdown:     shutdown.New(),
+		writerShutdown:     shutdown.New(),
+		msgHandlerShutdown: shutdown.New(),
+	}
 	cli.runner = tasks.NewRunner(ctx, &cfg.Runner, cli)
-	cli.ctx = xlog.NewContext(ctx, xlog.New())
-	cli.cancel = cancel
-
-	addr := cfg.Common.Addr + ":" + strconv.Itoa(cfg.Common.Port)
-	conn := NewConnection(ctx, addr)
-	cli.conn = conn
 
 	return cli
 }

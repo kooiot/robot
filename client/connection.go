@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"net"
+	"time"
 
 	"github.com/Allenxuxu/ringbuffer"
 	"github.com/kooiot/robot/pkg/net/protocol"
@@ -14,7 +15,8 @@ type Connection struct {
 	onMessageCallback func(ctx interface{}, data []byte) (out interface{})
 	onErrorCallback   func(err error)
 
-	ctx       context.Context
+	ctx context.Context
+
 	Conn      net.Conn
 	Address   string
 	Connected bool
@@ -53,6 +55,7 @@ func (conn *Connection) Run() error {
 		conn.onErrorCallback(err)
 		return err
 	} else {
+		c.SetReadDeadline(time.Now().Add(10 * time.Second))
 		defer c.Close()
 		conn.Conn = c
 

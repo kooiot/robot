@@ -29,7 +29,7 @@ func (s *BatchTask) Start() error {
 		return errors.New("error object")
 	}
 	for _, t := range s.config.Tasks {
-		xl.Info("%s: create sub task:%s", s.Info.Name, t.Name)
+		xl.Debug("%s: create sub task:%s", s.Info.Name, t.Name)
 		r.Add(&t, s)
 	}
 	return nil

@@ -98,10 +98,10 @@ func (r *Runner) update_task_status(task common.Task) {
 			result.Info = "Sub task failed" // TODO:
 		}
 		//
-		xl.Info("parent task: %s status done !", tinfo.Info.Name)
+		xl.Debug("parent task: %s status done !", tinfo.Info.Name)
 		go r.OnResult(task, &result)
 	} else {
-		xl.Info("task not finished!")
+		xl.Debug("task not finished!")
 	}
 }
 
@@ -117,9 +117,9 @@ func (r *Runner) OnResult(task common.Task, result *msg.TaskResult) error {
 		return errors.New("task not found")
 	}
 
+	result.Task = task.TaskInfo()
 	xl.Info("task: %s result:%#v", tinfo.Info.Name, result)
 
-	result.Task = task.TaskInfo()
 	if result.Result {
 		tinfo.Info.Status = msg.ST_DONE
 	} else {
@@ -128,7 +128,7 @@ func (r *Runner) OnResult(task common.Task, result *msg.TaskResult) error {
 	tinfo.Result = result
 
 	if tinfo.parent != nil {
-		xl.Info("update parent task status for %s!", tinfo.Info.Name)
+		xl.Debug("update parent task status for %s!", tinfo.Info.Name)
 		r.update_task_status(tinfo.parent)
 	}
 
@@ -175,7 +175,7 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 		info.ParentUUID = parent.TaskInfo().UUID
 	}
 
-	xl.Info("spawn task:%s", new_task.Info.Name)
+	xl.Debug("spawn task:%s", new_task.Info.Name)
 
 	//
 	r.reporter.SendTaskUpdate(t.TaskInfo())
@@ -188,7 +188,7 @@ func (r *Runner) Spawn(creator common.TaskCreator, info *msg.Task, parent common
 func (r *Runner) Add(task *msg.Task, parent common.Task) (common.Task, error) {
 	xl := xlog.FromContextSafe(r.ctx)
 
-	xl.Info("Add task %s: %#v", task.Name, task.Option)
+	xl.Debug("Add task %s: %#v", task.Name, task.Option)
 
 	// Find Creator and create task
 	creator := gCreators[task.Name]
@@ -204,7 +204,7 @@ func (r *Runner) Add(task *msg.Task, parent common.Task) (common.Task, error) {
 
 func (r *Runner) Wait(task common.Task, wait common.TaskWait) error {
 	xl := xlog.FromContextSafe(r.ctx)
-	xl.Info("Wait task %s", task.TaskInfo().Name)
+	xl.Debug("Wait task %s", task.TaskInfo().Name)
 	info := r.tasks[task.TaskInfo().UUID]
 	if info.Info.Status != msg.ST_NEW && info.Info.Status != msg.ST_RUN {
 		return errors.New("task is completed already")

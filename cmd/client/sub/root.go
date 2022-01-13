@@ -78,7 +78,7 @@ func runClient(cfgFilePath string) error {
 func startService(cfg config.ClientConf, cfgFile string) (err error) {
 	log.InitLog(cfg.Log)
 
-	svr := client.NewClient(&cfg)
+	svr := client.NewService(&cfg)
 
 	err = svr.Run()
 
