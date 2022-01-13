@@ -43,6 +43,8 @@ func (s *Server) AfterLogin(conn *gev.Connection, client *common.Client) {
 
 func (s *Server) HandleLogin(c *gev.Connection, req *msg.Login) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
+	xl.Trace("received login: %v", req)
+
 	resp := msg.LoginResp{
 		ClientID: req.ClientID,
 		ID:       999,
@@ -61,6 +63,23 @@ func (s *Server) HandleLogin(c *gev.Connection, req *msg.Login) interface{} {
 		go s.AfterLogin(c, &client)
 		return protocol.PackMessage("login_resp", data)
 	}
+}
+
+func (s *Server) HandleHeartbeat(c *gev.Connection, req *msg.HeartBeat) interface{} {
+	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("received heartbeat: %#v", req)
+
+	resp := &msg.HeartBeat{
+		ID:   req.ID,
+		Time: time.Now().UTC().Unix(),
+	}
+	xl.Info("Send back: %v", resp)
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		panic(err)
+	}
+	return protocol.PackMessage("heartbeat", data)
 }
 
 func (s *Server) HandleTaskUpdate(c *gev.Connection, req *msg.Task) interface{} {
@@ -85,14 +104,12 @@ func (s *Server) OnMessage(c *gev.Connection, ctx interface{}, data []byte) inte
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error(err.Error())
 		}
-		xl.Trace("received %s: %v", msgType, req)
 		return s.HandleLogin(c, &req)
 	case "logout":
 		req := msg.Logout{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error(err.Error())
 		}
-		xl.Trace("received %s: %v", msgType, req)
 
 		resp := &msg.Response{
 			Content: "OK",
@@ -104,19 +121,23 @@ func (s *Server) OnMessage(c *gev.Connection, ctx interface{}, data []byte) inte
 		} else {
 			return protocol.PackMessage("logout_resp", data)
 		}
+	case "heartbeat":
+		req := msg.HeartBeat{}
+		if err := json.Unmarshal(data, &req); err != nil {
+			xl.Info(err.Error())
+		}
+		return s.HandleHeartbeat(c, &req)
 	case "task.update":
 		req := msg.Task{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error(err.Error())
 		}
-		xl.Trace("received %s: %v", msgType, req)
 		return s.HandleTaskUpdate(c, &req)
 	case "task.result":
 		req := msg.TaskResult{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error(err.Error())
 		}
-		xl.Trace("received %s: %v", msgType, req)
 		return s.HandleTaskResult(c, &req)
 	default:
 		xl.Error("unknown msg type %s", msgType)

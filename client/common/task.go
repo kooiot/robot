@@ -31,9 +31,9 @@ type TaskWait func(task Task, result *msg.TaskResult)
 
 // Task Handler 接口
 type TaskHandler interface {
-	OnStart(Task)
-	OnError(Task, error)
-	OnSuccess(Task)
+	OnStart(Task) error
+	OnError(Task, error) error
+	OnSuccess(Task) error
 	OnResult(Task, *msg.TaskResult) error
 	Spawn(creator TaskCreator, info *msg.Task, parent Task) Task
 	Wait(Task, TaskWait) error

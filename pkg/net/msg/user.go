@@ -15,6 +15,11 @@ type LoginResp struct {
 	Reason   string `json:"reason"`
 }
 
+type HeartBeat struct {
+	ID   int32 `json:"id"`
+	Time int64 `json:"time"`
+}
+
 type Logout struct {
 	ClientID string `json:"client_id"`
 	ID       int32  `json:"id"`
