@@ -5,6 +5,7 @@ release/
 test/bin/
 vendor/
 dist/
+output/
 .idea/
 
 conf/server/robot-server

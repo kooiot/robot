@@ -234,7 +234,7 @@ func (c *Client) SendResult(task *msg.Task, result *msg.TaskResult) error {
 }
 
 func (c *Client) SendTaskUpdate(task *msg.Task) error {
-	return c.send_message("task.result", task)
+	return c.send_message("task.update", task)
 }
 
 func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
@@ -243,7 +243,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 	xl.Debug("On Message: %s", msgType)
 
 	switch msgType {
-	case "login_resp":
+	case "login.resp":
 		req := msg.LoginResp{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
@@ -251,7 +251,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 		xl.Debug("%s: %v", msgType, req)
 		c.client_id = req.ID
 		close(c.connected_chn)
-	case "logout_resp":
+	case "logout.resp":
 		req := msg.Response{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
