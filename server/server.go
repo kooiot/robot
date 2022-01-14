@@ -198,8 +198,9 @@ func (s *Server) handle_logout(c *gev.Connection, req *msg.Logout) interface{} {
 	} else {
 		go func() {
 			time.Sleep(1 * time.Second)
-			cli.Conn.Close()
-			s.close_task_store(req.ClientID)
+			if cli.Conn != nil {
+				cli.Conn.Close()
+			}
 		}()
 	}
 
@@ -314,6 +315,7 @@ func (s *Server) OnClose(c *gev.Connection) {
 	xl.Info("client connection closed %s", c.PeerAddr())
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
+		s.close_task_store(cli.Info.ClientID)
 		cli.Conn = nil
 	}
 }
