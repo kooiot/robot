@@ -190,7 +190,7 @@ func (c *PingPong) run() error {
 	c.Result.RecvSpeed = float64(recv_total) / time.Since(begin_time).Seconds()
 
 	xl.Debug("PingPong test finished: %#v", c.Result)
-	result := msg.TaskResult{
+	result := msg.TaskResultDetail{
 		Result: true,
 		Info:   "Done",
 		Detail: c.Result,

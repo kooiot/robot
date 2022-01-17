@@ -16,8 +16,8 @@ import (
 )
 
 type TaskInfo struct {
-	Info     msg.Task       `json:"info"`
-	Result   msg.TaskResult `json:"result"`
+	Info     *msg.Task             `json:"info"`
+	Result   *msg.TaskResultDetail `json:"result"`
 	parent   common.Task
 	task     common.Task
 	children []*TaskInfo
@@ -45,24 +45,24 @@ func (r *Runner) OnStart(task common.Task) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	tinfo, ok := r.tasks[task.TaskInfo().UUID]
+	tinfo, ok := r.tasks[task.UUID()]
 	if ok {
 		tinfo.Info.Status = msg.ST_RUN
-		return r.reporter.SendTaskUpdate(task.TaskInfo())
+		return r.reporter.SendTaskUpdate(tinfo.Info)
 	} else {
 		return errors.New("task not found")
 	}
 }
 
 func (r *Runner) OnError(task common.Task, err error) error {
-	return r.OnResult(task, msg.TaskResult{
+	return r.OnResult(task, msg.TaskResultDetail{
 		Result: false,
 		Info:   err.Error(),
 	})
 }
 
 func (r *Runner) OnSuccess(task common.Task) error {
-	return r.OnResult(task, msg.TaskResult{
+	return r.OnResult(task, msg.TaskResultDetail{
 		Result: true,
 		Info:   "done",
 	})
@@ -83,7 +83,7 @@ func (r *Runner) get_task_status(task_id string) (msg.StatusType, error) {
 func (r *Runner) update_task_status(task common.Task) {
 	xl := xlog.FromContextSafe(r.ctx)
 
-	tinfo, ok := r.tasks[task.TaskInfo().UUID]
+	tinfo, ok := r.tasks[task.UUID()]
 	if !ok {
 		xl.Error("task not found!!")
 		return
@@ -102,7 +102,7 @@ func (r *Runner) update_task_status(task common.Task) {
 	}
 
 	if all_done {
-		result := msg.TaskResult{
+		result := msg.TaskResultDetail{
 			Result: true,
 			Info:   "done",
 		}
@@ -118,19 +118,18 @@ func (r *Runner) update_task_status(task common.Task) {
 	}
 }
 
-func (r *Runner) OnResult(task common.Task, result msg.TaskResult) error {
+func (r *Runner) OnResult(task common.Task, result msg.TaskResultDetail) error {
 	xl := xlog.FromContextSafe(r.ctx)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	tinfo, ok := r.tasks[task.TaskInfo().UUID]
+	tinfo, ok := r.tasks[task.UUID()]
 	if !ok {
 		xl.Error("task not found!! result:%#v", result)
 		return errors.New("task not found")
 	}
 
-	result.Task = task.TaskInfo()
 	xl.Info("task: %s result:%#v", tinfo.Info.Task, result)
 
 	if result.Result {
@@ -138,7 +137,7 @@ func (r *Runner) OnResult(task common.Task, result msg.TaskResult) error {
 	} else {
 		tinfo.Info.Status = msg.ST_FAILED
 	}
-	tinfo.Result = result
+	tinfo.Result = &result
 
 	if tinfo.parent != nil {
 		xl.Debug("update parent task status for %s!", tinfo.Info.Task)
@@ -158,11 +157,7 @@ func (r *Runner) task_proc(task common.Task, info *TaskInfo) {
 	xl := xlog.FromContextSafe(r.ctx)
 	if len(info.Info.Depends) > 0 {
 		for {
-			xl.Error("task: %s depends size: %d", info.Info.ID, len(info.Info.Depends))
-			xl.Info("task %s depends ......... %#v", info.Info.ID, task)
 			time.Sleep(1 * time.Second)
-			xl.Info("task %s wait depends task finish......... %#v", info.Info.ID, info.Info.Depends)
-			xl.Info("task %s wait depends task finish......... %#v", info.Info.ID, task)
 			all_done := true
 			for _, dep := range info.Info.Depends {
 				sts, err := r.get_task_status(dep)
@@ -205,27 +200,27 @@ func (r *Runner) Spawn(creator common.TaskCreator, info msg.Task, parent common.
 	}
 
 	t := creator(r.ctx, r, info, parent)
+	info.Status = msg.ST_NEW
 	new_task := &TaskInfo{
-		Info:   info,
+		Info:   &info,
 		task:   t,
 		parent: parent,
 	}
-	info.Status = msg.ST_NEW
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.tasks[t.TaskInfo().UUID] = new_task
+	r.tasks[t.UUID()] = new_task
 	if parent != nil {
-		p_info := r.tasks[parent.TaskInfo().UUID]
+		p_info := r.tasks[parent.UUID()]
 		p_info.children = append(p_info.children, new_task)
-		info.ParentUUID = parent.TaskInfo().UUID
+		info.ParentUUID = parent.UUID()
 	}
 
 	xl.Debug("spawn task: %s", new_task.Info.ID)
 
 	//
-	r.reporter.SendTaskUpdate(t.TaskInfo())
+	r.reporter.SendTaskUpdate(&info)
 
 	go r.task_proc(t, new_task)
 
@@ -251,8 +246,8 @@ func (r *Runner) Add(task msg.Task, parent common.Task) (common.Task, error) {
 
 func (r *Runner) Wait(task common.Task, wait common.TaskWait) error {
 	xl := xlog.FromContextSafe(r.ctx)
-	xl.Debug("Wait task %s", task.TaskInfo().Task)
-	info := r.tasks[task.TaskInfo().UUID]
+	xl.Debug("Wait task %s", task.ID())
+	info := r.tasks[task.UUID()]
 	if info.Info.Status != msg.ST_NEW && info.Info.Status != msg.ST_RUN {
 		return errors.New("task is completed already")
 	}
@@ -274,7 +269,10 @@ func (r *Runner) Halt() error {
 }
 
 func (r *Runner) ReportResult(info *TaskInfo) error {
-	r.reporter.SendResult(info.task.TaskInfo(), info.Result)
+	r.reporter.SendResult(&msg.TaskResult{
+		Task:   *info.Info,
+		Detail: *info.Result,
+	})
 	return nil
 }
 

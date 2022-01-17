@@ -232,11 +232,11 @@ func (c *Client) send_heartbeat() error {
 	return c.send_message("heartbeat", &req)
 }
 
-func (c *Client) SendResult(task msg.Task, result msg.TaskResult) error {
+func (c *Client) SendResult(result *msg.TaskResult) error {
 	return c.send_message("task.result", result)
 }
 
-func (c *Client) SendTaskUpdate(task msg.Task) error {
+func (c *Client) SendTaskUpdate(task *msg.Task) error {
 	return c.send_message("task.update", task)
 }
 

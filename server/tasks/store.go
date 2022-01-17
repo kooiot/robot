@@ -8,55 +8,71 @@ import (
 	"io"
 	"os"
 	"path"
+	"runtime/debug"
 	"strconv"
 	"time"
 
 	"github.com/kooiot/robot/pkg/net/msg"
+	"github.com/kooiot/robot/pkg/util/shutdown"
 	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
-type TaskStore struct {
-	onTaskInsert func(task *msg.Task)
-	onTaskUpdate func(task *msg.Task)
-	onTaskFinish func(task *msg.Task, result *msg.TaskResult)
-	onOpen       func()
-	onClose      func(err error)
+type TaskStoreMsgType int32
 
-	ctx         context.Context
-	xl          *xlog.Logger
-	output_dir  string
-	output_path string
-	ClientID    string
-	Tasks       []msg.Task
+const (
+	MSG_OPEN   TaskStoreMsgType = 0
+	MSG_CLOSE  TaskStoreMsgType = 1
+	MSG_UPDATE TaskStoreMsgType = 2
+	MSG_RESULT TaskStoreMsgType = 4
+)
+
+type TaskStoreMsg struct {
+	Type     TaskStoreMsgType
+	ClientID string
+	Msg      interface{}
 }
 
-func (t *TaskStore) OnTaskInsert(f func(task *msg.Task)) {
+type TaskStoreInfo struct {
+	ClientID string
+	Output   string
+	Tasks    []msg.TaskResult
+}
+
+type TaskStore struct {
+	onTaskInsert func(client_id string, task *msg.Task)
+	onTaskUpdate func(client_id string, task *msg.Task)
+	onTaskFinish func(client_id string, result *msg.TaskResult)
+	onOpen       func(client_id string)
+	onClose      func(client_id string, err error)
+
+	ctx        context.Context
+	xl         *xlog.Logger
+	output_dir string
+
+	clients map[string]*TaskStoreInfo
+
+	msg_chn         chan TaskStoreMsg
+	worker_shutdown *shutdown.Shutdown
+}
+
+func (t *TaskStore) OnTaskInsert(f func(client_id string, task *msg.Task)) {
 	t.onTaskInsert = f
 }
 
-func (t *TaskStore) OnTaskUpdate(f func(task *msg.Task)) {
+func (t *TaskStore) OnTaskUpdate(f func(client_id string, task *msg.Task)) {
 	t.onTaskUpdate = f
 }
 
-func (t *TaskStore) OnTaskFinish(f func(task *msg.Task, result *msg.TaskResult)) {
+func (t *TaskStore) OnTaskFinish(f func(client_id string, result *msg.TaskResult)) {
 	t.onTaskFinish = f
 }
 
-func (t *TaskStore) OnOpen(f func()) {
+func (t *TaskStore) OnOpen(f func(client_id string)) {
 	t.onOpen = f
 }
 
-func (t *TaskStore) OnClose(f func(error)) {
+func (t *TaskStore) OnClose(f func(client_id string, err error)) {
 	t.onClose = f
-}
-
-func (t *TaskStore) Open() {
-	xl := xlog.FromContextSafe(t.ctx)
-	now := strconv.FormatInt(time.Now().Unix(), 10)
-	t.output_path = path.Join(t.output_dir, t.ClientID+"_"+now+".json")
-	xl.Info("Task result save to: %s", t.output_path)
-
-	t.onOpen()
 }
 
 func DoZlibCompress(dataSrc []byte) []byte {
@@ -75,67 +91,167 @@ func DoZlibUnCompress(compressSrc []byte) []byte {
 	return out.Bytes()
 }
 
-func (t *TaskStore) dump_tasks() {
+func (t *TaskStore) dump_tasks(info *TaskStoreInfo) {
 	xl := xlog.FromContextSafe(t.ctx)
-	data, err := json.Marshal(t.Tasks)
+	data, err := json.Marshal(info.Tasks)
 	if err != nil {
 		xl.Error("JSON.Marshal failure: %s", err.Error())
 	} else {
-		xl.Debug("Task result save to: %s", t.output_path)
-		//err = os.WriteFile(t.output_path, DoZlibCompress(data), 0644)
-		err = os.WriteFile(t.output_path, data, 0644)
+		err = os.WriteFile(info.Output, data, 0644)
 		if err != nil {
-			xl.Error("os.WriteFile to: %s failure: %s", t.output_path, err.Error())
+			xl.Error("os.WriteFile to: %s failure: %s", info.Output, err.Error())
 		}
 	}
 }
 
-func (t *TaskStore) Close(err error) {
-	t.dump_tasks()
-	t.onClose(err)
+func (t *TaskStore) worker() {
+	xl := t.xl
+	defer func() {
+		if err := recover(); err != nil {
+			xl.Error("panic error: %v", err)
+			xl.Error(string(debug.Stack()))
+		}
+	}()
+	defer t.worker_shutdown.Done()
+
+	xl.Debug("worker start.......")
+	for m := range t.msg_chn {
+		xl.Debug("Process.......")
+		switch m.Type {
+		case MSG_OPEN:
+			t._Open(m.ClientID)
+		case MSG_CLOSE:
+			t._Close(m.ClientID, m.Msg.(error))
+		case MSG_UPDATE:
+			t._TaskUpdate(m.ClientID, m.Msg.(*msg.Task))
+		case MSG_RESULT:
+			t._TaskResult(m.ClientID, m.Msg.(*msg.TaskResult))
+		}
+	}
+	xl.Debug("worker quit.......")
 }
 
-func (t *TaskStore) TaskUpdate(task *msg.Task) {
-	for i, v := range t.Tasks {
-		if v.UUID == task.UUID {
-			t.Tasks[i] = *task
-			t.onTaskUpdate(task)
+func (t *TaskStore) Start() {
+	go t.worker()
+}
 
-			t.dump_tasks()
+func (t *TaskStore) Stop() {
+	close(t.msg_chn)
+
+	t.worker_shutdown.WaitDone()
+}
+
+func (t *TaskStore) Open(client_id string) {
+	t.msg_chn <- TaskStoreMsg{
+		Type:     MSG_OPEN,
+		ClientID: client_id,
+	}
+}
+
+func (t *TaskStore) _Open(client_id string) {
+	xl := t.xl
+	now := strconv.FormatInt(time.Now().Unix(), 10)
+	output_path := path.Join(t.output_dir, client_id+"_"+now+".json")
+	xl.Info("Task result save to: %s", output_path)
+	t.clients[client_id] = &TaskStoreInfo{
+		ClientID: client_id,
+		Output:   output_path,
+	}
+	t.onOpen(client_id)
+}
+
+func (t *TaskStore) Close(client_id string, err error) {
+	t.msg_chn <- TaskStoreMsg{
+		Type:     MSG_CLOSE,
+		ClientID: client_id,
+		Msg:      err,
+	}
+}
+
+func (t *TaskStore) _Close(client_id string, err error) {
+	xl := t.xl
+	info, ok := t.clients[client_id]
+	if !ok {
+		xl.Error("task for client:%d missing", client_id)
+	}
+	defer delete(t.clients, client_id)
+
+	t.dump_tasks(info)
+	t.onClose(client_id, err)
+}
+
+func (t *TaskStore) TaskUpdate(client_id string, task *msg.Task) {
+	t.msg_chn <- TaskStoreMsg{
+		Type:     MSG_UPDATE,
+		ClientID: client_id,
+		Msg:      task,
+	}
+}
+
+func (t *TaskStore) _TaskUpdate(client_id string, task *msg.Task) {
+	xl := t.xl
+	info, ok := t.clients[client_id]
+	if !ok {
+		xl.Error("task for client:%d missing", client_id)
+	}
+	for i, v := range info.Tasks {
+		if v.Task.UUID == task.UUID {
+			info.Tasks[i].Task = *task
+			t.dump_tasks(info)
+			t.onTaskUpdate(client_id, task)
 			return
 		}
 	}
 	// Insert New
-	t.Tasks = append(t.Tasks, *task)
-	t.onTaskInsert(task)
+	info.Tasks = append(info.Tasks, msg.TaskResult{
+		Task: *task,
+	})
 
-	t.dump_tasks()
+	t.dump_tasks(info)
+	t.onTaskInsert(client_id, task)
 }
 
-func (t *TaskStore) TaskResult(result *msg.TaskResult) {
-	for _, v := range t.Tasks {
-		if v.UUID == result.Task.UUID {
-			t.dump_tasks()
-			t.onTaskFinish(&v, result)
+func (t *TaskStore) TaskResult(client_id string, result *msg.TaskResult) {
+	t.msg_chn <- TaskStoreMsg{
+		Type:     MSG_RESULT,
+		ClientID: client_id,
+		Msg:      result,
+	}
+}
+
+func (t *TaskStore) _TaskResult(client_id string, result *msg.TaskResult) {
+	xl := t.xl
+	info, ok := t.clients[client_id]
+	if !ok {
+		xl.Error("task for client:%d missing", client_id)
+	}
+	for i, v := range info.Tasks {
+		if v.Task.UUID == result.Task.UUID {
+			info.Tasks[i] = *result
+			t.dump_tasks(info)
+			t.onTaskUpdate(client_id, &result.Task)
+			t.onTaskFinish(client_id, result)
 			return
 		}
 	}
 	t.xl.Error("task not found for result: %#v", result)
 }
 
-func NewTaskStore(ctx context.Context, client_id string, output string) *TaskStore {
+func NewTaskStore(ctx context.Context, output string) *TaskStore {
 	store := &TaskStore{
-		ctx:        ctx,
-		xl:         xlog.FromContextSafe(ctx),
-		ClientID:   client_id,
-		output_dir: output,
+		ctx:             ctx,
+		xl:              xlog.FromContextSafe(ctx),
+		msg_chn:         make(chan TaskStoreMsg, 100),
+		clients:         make(map[string]*TaskStoreInfo),
+		worker_shutdown: shutdown.New(),
+		output_dir:      output,
 	}
 
-	store.OnOpen(func() {})
-	store.OnClose(func(err error) {})
-	store.OnTaskInsert(func(task *msg.Task) {})
-	store.OnTaskUpdate(func(task *msg.Task) {})
-	store.OnTaskFinish(func(task *msg.Task, result *msg.TaskResult) {})
+	store.OnOpen(func(client_id string) {})
+	store.OnClose(func(client_id string, err error) {})
+	store.OnTaskInsert(func(client_id string, task *msg.Task) {})
+	store.OnTaskUpdate(func(client_id string, task *msg.Task) {})
+	store.OnTaskFinish(func(client_id string, result *msg.TaskResult) {})
 
 	return store
 }

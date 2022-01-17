@@ -21,11 +21,15 @@ type Task struct {
 	Depends     []string    `mapstructure:"depends" json:"depends"`
 }
 
-type TaskResult struct {
-	Task   Task        `mapstructure:"task" json:"task"`
+type TaskResultDetail struct {
 	Result bool        `mapstructure:"result" json:"result"`
 	Info   string      `mapstructure:"info" json:"info"`
 	Detail interface{} `mapstructure:"detail" json:"detail"`
+}
+
+type TaskResult struct {
+	Task   Task             `mapstructure:"task" json:"task"`
+	Detail TaskResultDetail `mapstructure:"detail" json:"detail"`
 }
 
 type BatchTask struct {

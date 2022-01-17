@@ -47,7 +47,7 @@ func (s *DoneTask) Start() error {
 	// Make ourself as finished
 	s.handler.OnSuccess(s)
 	// Wait for other tasks
-	s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResult) {
+	s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResultDetail) {
 		if result.Result {
 			r := s.handler.(*Runner)
 			if r != nil {

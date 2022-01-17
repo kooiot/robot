@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path"
 	"strconv"
@@ -27,10 +28,10 @@ type Server struct {
 	server      *gev.Server
 	handlers    []common.ServerHandler
 
-	client_next_id int32
-	clients        map[string]*common.Client
-	client_tasks   map[string]*tasks.TaskStore
-	clients_lock   sync.RWMutex
+	client_next_id    int32
+	clients           map[string]*common.Client
+	client_task_store *tasks.TaskStore
+	clients_lock      sync.RWMutex
 
 	// write to this channel to write the message sent to server
 	send_chn chan (*msg.Message)
@@ -47,8 +48,6 @@ func (s *Server) OnConnect(c *gev.Connection) {
 
 func (s *Server) after_login(conn *gev.Connection, client *common.Client) {
 	xl := xlog.FromContextSafe(s.ctx)
-	time.Sleep(1 * time.Second)
-
 	xl.Debug("AfterLogin %s", conn.PeerAddr())
 	for _, h := range s.handlers {
 		h.AfterLogin(conn, client)
@@ -107,22 +106,19 @@ func (s *Server) handle_login(c *gev.Connection, req *msg.Login) interface{} {
 	client.Conn = c
 	client.LastHeartbeat = time.Now()
 
-	output_path := s.get_task_output_dir()
-	store := tasks.NewTaskStore(s.ctx, req.ClientID, output_path)
-
 	s.clients_lock.Lock()
 	s.clients[req.ClientID] = client
-	s.client_tasks[req.ClientID] = store
 	s.clients_lock.Unlock()
 
-	go s.after_login(c, client)
-	go store.Open()
+	s.client_task_store.Open(req.ClientID)
 
 	s.send_message(c, "login.resp", &msg.LoginResp{
 		ClientID: req.ClientID,
 		ID:       client_id,
 		Reason:   "OK",
 	})
+
+	go s.after_login(c, client)
 	return nil
 }
 
@@ -147,32 +143,6 @@ func (s *Server) remove_client(cli *common.Client) {
 	s.clients_lock.Lock()
 	defer s.clients_lock.Unlock()
 	delete(s.clients, cli.Info.ClientID)
-}
-
-func (s *Server) get_store_by_conn(conn *gev.Connection) *tasks.TaskStore {
-	xl := xlog.FromContextSafe(s.ctx)
-	s.clients_lock.Lock()
-	defer s.clients_lock.Unlock()
-	for _, c := range s.clients {
-		if c.Conn == conn {
-			s, ok := s.client_tasks[c.Info.ClientID]
-			if !ok {
-				xl.Error("client's store not found!")
-				return nil
-			}
-			return s
-		}
-	}
-	xl.Error("client not found for this connection!")
-	return nil
-}
-
-func (s *Server) close_task_store(id string) {
-	s.clients_lock.Lock()
-	defer s.clients_lock.Unlock()
-	store := s.client_tasks[id]
-	go store.Close(nil)
-	delete(s.client_tasks, id)
 }
 
 func (s *Server) check_heartbeat() {
@@ -249,23 +219,23 @@ func (s *Server) handle_heartbeat(c *gev.Connection, req *msg.HeartBeat) interfa
 func (s *Server) handle_task_update(c *gev.Connection, req *msg.Task) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
 	xl.Info("received task: %#v", req)
-	store := s.get_store_by_conn(c)
-	if store != nil {
-		go store.TaskUpdate(req)
+	cli := s.get_client_by_conn(c)
+	if cli != nil {
+		s.client_task_store.TaskUpdate(cli.Info.ClientID, req)
 	} else {
-		xl.Error("received task store not found")
+		xl.Error("Client not found")
 	}
 	return nil
 }
 
 func (s *Server) handle_task_result(c *gev.Connection, req *msg.TaskResult) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
-	xl.Info("received result: %#v", req)
-	store := s.get_store_by_conn(c)
-	if store != nil {
-		go store.TaskResult(req)
+	xl.Info("received result: %#v", req.Task)
+	cli := s.get_client_by_conn(c)
+	if cli != nil {
+		s.client_task_store.TaskResult(cli.Info.ClientID, req)
 	} else {
-		xl.Error("received task store not found")
+		xl.Error("Client not found")
 	}
 	return nil
 }
@@ -304,7 +274,6 @@ func (s *Server) OnMessage(c *gev.Connection, ctx interface{}, data []byte) inte
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
-		xl.Info("result: %s", data)
 		return s.handle_task_result(c, &req)
 	default:
 		xl.Error("unknown msg type %s", msgType)
@@ -318,7 +287,7 @@ func (s *Server) OnClose(c *gev.Connection) {
 	xl.Info("client connection closed %s", c.PeerAddr())
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
-		s.close_task_store(cli.Info.ClientID)
+		s.client_task_store.Close(cli.Info.ClientID, errors.New("connection closed"))
 		cli.Conn = nil
 	}
 }
@@ -354,11 +323,17 @@ func (s *Server) Init() error {
 		return err
 	}
 	s.handlers = append(s.handlers, h)
+
+	output_path := s.get_task_output_dir()
+	s.client_task_store = tasks.NewTaskStore(s.ctx, output_path)
+	s.client_task_store.Start()
+
 	return nil
 }
 
 func (s *Server) Close() {
 	atomic.StoreUint32(&s.exit, 1)
+	s.client_task_store.Stop()
 	s.cancel()
 }
 
@@ -378,7 +353,6 @@ func NewServer(cfg *config.ServerConf, cfgFile string) *Server {
 		read_chn:       make(chan *msg.Message, 100),
 		client_next_id: 0,
 		clients:        make(map[string]*common.Client),
-		client_tasks:   make(map[string]*tasks.TaskStore),
 		clients_lock:   sync.RWMutex{},
 	}
 
