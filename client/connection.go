@@ -8,7 +8,6 @@ import (
 
 	"github.com/Allenxuxu/ringbuffer"
 	"github.com/kooiot/robot/pkg/net/protocol"
-	"github.com/kooiot/robot/pkg/util/log"
 )
 
 type Connection struct {
@@ -88,8 +87,6 @@ func (conn *Connection) read() {
 			if sendData != nil {
 				conn.Conn.Write(sendData.([]byte))
 			}
-		} else {
-			log.Error("AAAAAAAAAAAAAA")
 		}
 	}
 }

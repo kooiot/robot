@@ -136,6 +136,7 @@ func (r *Runner) OnResult(task common.Task, result msg.TaskResultDetail) error {
 		tinfo.Info.Status = msg.ST_DONE
 	} else {
 		tinfo.Info.Status = msg.ST_FAILED
+		xl.Error("task: %s failed. error: %#v", task.ID(), result)
 	}
 	tinfo.Result = &result
 
