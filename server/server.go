@@ -218,7 +218,7 @@ func (s *Server) handle_heartbeat(c *gev.Connection, req *msg.HeartBeat) interfa
 
 func (s *Server) handle_task_update(c *gev.Connection, req *msg.Task) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
-	xl.Info("received task: %#v", req)
+	xl.Debug("received task: %#v", req)
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
 		s.client_task_store.TaskUpdate(cli.Info.ClientID, req)
@@ -230,7 +230,7 @@ func (s *Server) handle_task_update(c *gev.Connection, req *msg.Task) interface{
 
 func (s *Server) handle_task_result(c *gev.Connection, req *msg.TaskResult) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
-	xl.Info("received result: %#v", req.Task)
+	xl.Debug("received result: %#v", req.Task)
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
 		s.client_task_store.TaskResult(cli.Info.ClientID, req)

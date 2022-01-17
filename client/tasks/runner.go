@@ -130,7 +130,7 @@ func (r *Runner) OnResult(task common.Task, result msg.TaskResultDetail) error {
 		return errors.New("task not found")
 	}
 
-	xl.Info("task: %s result:%#v", tinfo.Info.Task, result)
+	xl.Debug("task: %s result:%#v", tinfo.Info.Task, result)
 
 	if result.Result {
 		tinfo.Info.Status = msg.ST_DONE
@@ -180,8 +180,6 @@ func (r *Runner) task_proc(task common.Task, info *TaskInfo) {
 				break
 			}
 		}
-	} else {
-		xl.Error("task: %s depends null", info.Info.ID)
 	}
 
 	err := task.Start()

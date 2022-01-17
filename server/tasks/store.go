@@ -114,9 +114,7 @@ func (t *TaskStore) worker() {
 	}()
 	defer t.worker_shutdown.Done()
 
-	xl.Debug("worker start.......")
 	for m := range t.msg_chn {
-		xl.Debug("Process.......")
 		switch m.Type {
 		case MSG_OPEN:
 			t._Open(m.ClientID)
@@ -128,7 +126,6 @@ func (t *TaskStore) worker() {
 			t._TaskResult(m.ClientID, m.Msg.(*msg.TaskResult))
 		}
 	}
-	xl.Debug("worker quit.......")
 }
 
 func (t *TaskStore) Start() {
