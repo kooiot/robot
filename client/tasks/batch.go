@@ -29,8 +29,8 @@ func (s *BatchTask) Start() error {
 		return errors.New("error object")
 	}
 	for _, t := range s.config.Tasks {
-		xl.Debug("%s: create sub task:%s", s.Info.Name, t.Name)
-		r.Add(&t, s)
+		xl.Debug("%s: create sub task:%s", s.Info.Task, t.Task)
+		r.Add(t, s)
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ func (s *BatchTask) Stop() error {
 	return nil
 }
 
-func NewBatchTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewBatchTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.BatchTask{}

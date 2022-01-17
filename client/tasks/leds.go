@@ -48,7 +48,7 @@ func (s *LedsTask) Stop() error {
 	return nil
 }
 
-func NewLedsTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewLedsTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.LedsTask{}

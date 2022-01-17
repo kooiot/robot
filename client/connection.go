@@ -8,6 +8,7 @@ import (
 
 	"github.com/Allenxuxu/ringbuffer"
 	"github.com/kooiot/robot/pkg/net/protocol"
+	"github.com/kooiot/robot/pkg/util/log"
 )
 
 type Connection struct {
@@ -79,7 +80,7 @@ func (conn *Connection) read() {
 			return
 		}
 
-		conn.buffer.WithData(buf[:num])
+		conn.buffer.Write(buf[:num])
 
 		ctx, recvData := protocol.UnPacketMessage(conn.buffer)
 		if ctx != nil || len(recvData) != 0 {
@@ -87,6 +88,8 @@ func (conn *Connection) read() {
 			if sendData != nil {
 				conn.Conn.Write(sendData.([]byte))
 			}
+		} else {
+			log.Error("AAAAAAAAAAAAAA")
 		}
 	}
 }

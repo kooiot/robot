@@ -105,6 +105,7 @@ func (s *Server) handle_login(c *gev.Connection, req *msg.Login) interface{} {
 		client_id = client.ID
 	}
 	client.Conn = c
+	client.LastHeartbeat = time.Now()
 
 	output_path := s.get_task_output_dir()
 	store := tasks.NewTaskStore(s.ctx, req.ClientID, output_path)
@@ -186,7 +187,9 @@ func (s *Server) check_heartbeat() {
 	s.clients_lock.Unlock()
 
 	for _, c := range to_closed {
-		c.Conn.Close()
+		if c.Conn != nil {
+			c.Conn.Close()
+		}
 	}
 }
 

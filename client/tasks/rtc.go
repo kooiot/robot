@@ -20,7 +20,7 @@ type RTCTask struct {
 }
 
 func init() {
-	RegisterTask("task", NewRTCTask)
+	RegisterTask("rtc", NewRTCTask)
 }
 
 func (s *RTCTask) Start() error {
@@ -29,14 +29,22 @@ func (s *RTCTask) Start() error {
 }
 
 func (s *RTCTask) run() {
-	err := exec.Command("hwclock", "-w").Wait()
+	cmd := "hwclock -w"
+	if len(s.config.File) > 0 {
+		cmd += " -f " + s.config.File
+	}
+	err := exec.Command("sh", "-c", cmd).Wait()
 	if err != nil {
 		s.handler.OnError(s, err)
 		return
 	}
 
 	time.Sleep(10 * time.Second)
-	out, err := exec.Command("hwclock", "-r").Output()
+	cmd = "hwclock -r"
+	if len(s.config.File) > 0 {
+		cmd += " -f " + s.config.File
+	}
+	out, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
 		s.handler.OnError(s, err)
 		return
@@ -55,7 +63,7 @@ func (s *RTCTask) Stop() error {
 	return nil
 }
 
-func NewRTCTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewRTCTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.RTCTask{}

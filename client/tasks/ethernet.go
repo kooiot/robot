@@ -78,7 +78,7 @@ func (s *EthernetTask) Stop() error {
 	return nil
 }
 
-func NewEthernetTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewEthernetTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.EthernetTask{}

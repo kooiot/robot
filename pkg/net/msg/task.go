@@ -14,13 +14,15 @@ type Task struct {
 	UUID        string      `mapstructure:"uuid" json:"uuid"`
 	ParentUUID  string      `mapstructure:"parent_uuid" json:"parent_uuid"`
 	Status      StatusType  `mapstructure:"status" json:"status"`
-	Name        string      `mapstructure:"name" json:"name"`
+	ID          string      `mapstructure:"id" json:"id"`
+	Task        string      `mapstructure:"task" json:"task"`
 	Description string      `mapstructure:"desc" json:"desc"`
 	Option      interface{} `mapstructure:"option" json:"option"`
+	Depends     []string    `mapstructure:"depends" json:"depends"`
 }
 
 type TaskResult struct {
-	Task   *Task       `mapstructure:"task" json:"task"`
+	Task   Task        `mapstructure:"task" json:"task"`
 	Result bool        `mapstructure:"result" json:"result"`
 	Info   string      `mapstructure:"info" json:"info"`
 	Detail interface{} `mapstructure:"detail" json:"detail"`

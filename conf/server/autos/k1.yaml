@@ -1,6 +1,7 @@
 tasks:
   - 
-    name: serial
+    id: com1_com2_test
+    task: serial
     desc: serial test com1 com2
     option:
       src: /tmp/ttyS1
@@ -9,7 +10,8 @@ tasks:
       count: 100
       max_msg_size: 500
   - 
-    name: serial
+    id: com3_com4_test
+    task: serial
     desc: serial test com3 com4
     option:
       src: /dev/ttyS3

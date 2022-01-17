@@ -47,7 +47,7 @@ func (s *DoneTask) Start() error {
 	// Make ourself as finished
 	s.handler.OnSuccess(s)
 	// Wait for other tasks
-	s.handler.Wait(s.parent, func(task common.Task, result *msg.TaskResult) {
+	s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResult) {
 		if result.Result {
 			r := s.handler.(*Runner)
 			if r != nil {
@@ -64,7 +64,7 @@ func (s *DoneTask) Stop() error {
 	return nil
 }
 
-func NewDoneTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewDoneTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.DoneTask{}

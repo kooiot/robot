@@ -33,23 +33,30 @@ func PackMessage(msgType string, data []byte) []byte {
 // UnPacket ...
 func UnPacketMessage(buffer *ringbuffer.RingBuffer) (ctx interface{}, out []byte) {
 	if buffer.Length() > 6 {
-		length := int(buffer.PeekUint32())
-		if buffer.Length() >= length+4 {
+		buf := pbytes.GetLen(4)
+		defer pbytes.Put(buf)
+
+		_, _ = buffer.VirtualRead(buf)
+		length := binary.BigEndian.Uint32(buf)
+		buffer.VirtualRevert()
+
+		if buffer.Length() >= int(length)+4 {
 			buffer.Retrieve(4)
 
-			typeLen := int(buffer.PeekUint16())
+			type_len := int(buffer.PeekUint16())
 			buffer.Retrieve(2)
 
-			typeByte := pbytes.GetLen(typeLen)
-			_, _ = buffer.Read(typeByte)
+			type_bytes := pbytes.GetLen(type_len)
+			defer pbytes.Put(type_bytes)
 
-			dataLen := length - 2 - typeLen
-			data := make([]byte, dataLen)
+			_, _ = buffer.Read(type_bytes)
+
+			data_len := int(length) - 2 - type_len
+			data := make([]byte, data_len)
 			_, _ = buffer.Read(data)
 
 			out = data
-			ctx = string(typeByte)
-			pbytes.Put(typeByte)
+			ctx = string(type_bytes)
 		}
 	}
 	return

@@ -66,11 +66,11 @@ func (s *ModemTask) run() {
 
 		t := msg.Task{}
 		t.UUID = uuid.NewV4().String()
-		t.Name = "usb"
+		t.Task = "usb"
 		t.Description = "Sub task from modem task"
 		t.Option = s.config.USB
 
-		s.handler.Spawn(NewUSBTask, &t, s)
+		s.handler.Spawn(NewUSBTask, t, s)
 		// s.handler.OnSuccess(s)
 	} else {
 		s.handler.OnError(s, errors.New("failed, statistics:"+string(stats_str)))
@@ -81,7 +81,7 @@ func (s *ModemTask) Stop() error {
 	return nil
 }
 
-func NewModemTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewModemTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.ModemTask{}

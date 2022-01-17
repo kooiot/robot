@@ -195,7 +195,7 @@ func (c *PingPong) run() error {
 		Info:   "Done",
 		Detail: c.Result,
 	}
-	c.handler.OnResult(c.task, &result)
+	c.handler.OnResult(c.task, result)
 
 	// Stop stream
 	defer c.stream.Stop()

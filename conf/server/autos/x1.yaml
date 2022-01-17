@@ -1,6 +1,7 @@
 tasks:
   - 
-    name: serial
+    id: serial_com1_com2_test
+    task: serial
     desc: serial test com1 com2
     option:
       src: /dev/ttyS1
@@ -9,7 +10,8 @@ tasks:
       count: 100
       max_msg_size: 500
   - 
-    name: modem
+    id: pcie_modem_test
+    task: modem
     desc: 4G modem
     option:
       ping_addr: 8.8.8.8
@@ -19,14 +21,48 @@ tasks:
         reset: "pcie_reset"
         power: "pcie_power"
   - 
-    name: ethernet
+    id: eth1_ping
+    task: ethernet
     desc: ETH1 ping test
     option:
       ping_addr: 192.168.2.139
       init:
         - "ifconfig eth1 192.168.2.248"
+  - 
+    id: eth0_ping
+    task: ethernet
+    desc: ETH0 ping test
+    option:
+      ping_addr: 192.168.1.139
+  - 
+    id: eth1_reset
+    task: usb
+    desc: ETH1 reset test
+    depends: 
+      - eth1_ping
+    option:
+      ids:
+        - "0b95:772b"
+      reset: "eth1_reset"
+  - 
+    id: eth1_ping_after_reset
+    task: ethernet
+    desc: ETH1 ping test
+    depends: 
+      - eth1_reset
+    option:
+      ping_addr: 192.168.2.139
+      init:
+        - "ifconfig eth1 192.168.2.248"
+  - 
+    id: rtc_rx8010_test
+    task: rtc
+    desc: RTC chip test
+    option:
+      file: /dev/rtc0
   -
-    name: leds
+    id: leds_test
+    task: leds
     desc: Test LEDS
     option:
       leds:
@@ -37,7 +73,8 @@ tasks:
       count: 50
       span: 200
   -
-    name: done
+    id: done
+    task: done
     desc: Test done
     option:
       leds:

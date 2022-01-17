@@ -137,7 +137,7 @@ func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 			xl.Debug("Fire task to: %s - %#v", client.Info.ClientID, t.Task)
 			task := msg.Task{
 				// UUID:        uuid.NewV4().String(),
-				Name:        "batch",
+				Task:        "batch",
 				Description: "Auto batch task",
 				Option:      t.Task,
 			}

@@ -138,7 +138,7 @@ func (s *USBTask) Stop() error {
 	return nil
 }
 
-func NewUSBTask(ctx context.Context, handler common.TaskHandler, info *msg.Task, parent common.Task) common.Task {
+func NewUSBTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
 	conf := msg.USBTask{}

@@ -67,6 +67,7 @@ func (c *Client) newConn() (*Connection, error) {
 	})
 
 	conn.OnMessage(func(ctx interface{}, data []byte) (out interface{}) {
+		xl.Debug("conn.OnMessage %v", ctx)
 		c.read_chn <- &msg.Message{
 			CTX:  ctx,
 			Data: data,
@@ -106,7 +107,9 @@ func (c *Client) reader() {
 	defer c.readerShutdown.Done()
 	defer close(c.closed_chn)
 
+	xl.Info("client connection run start")
 	c.conn.Run()
+	xl.Error("client connection run finished!")
 }
 
 // writer writes messages got from sendCh to frps
@@ -229,11 +232,11 @@ func (c *Client) send_heartbeat() error {
 	return c.send_message("heartbeat", &req)
 }
 
-func (c *Client) SendResult(task *msg.Task, result *msg.TaskResult) error {
+func (c *Client) SendResult(task msg.Task, result msg.TaskResult) error {
 	return c.send_message("task.result", result)
 }
 
-func (c *Client) SendTaskUpdate(task *msg.Task) error {
+func (c *Client) SendTaskUpdate(task msg.Task) error {
 	return c.send_message("task.update", task)
 }
 
@@ -248,7 +251,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
-		xl.Debug("%s: %v", msgType, req)
+		xl.Debug("%s: %#v", msgType, req)
 		c.client_id = req.ID
 		close(c.connected_chn)
 	case "logout.resp":
@@ -256,21 +259,21 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
-		xl.Debug("%s: %v", msgType, req)
+		xl.Debug("%s: %#v", msgType, req)
 	case "heartbeat":
 		req := msg.HeartBeat{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
 		c.last_heartbeat = time.Now()
-		xl.Debug("%s: %v", msgType, req)
+		xl.Debug("%s: %#v", msgType, req)
 	case "task":
 		req := msg.Task{}
 		if err := json.Unmarshal(data, &req); err != nil {
 			xl.Error("JSON.Unmarshal error: %s", err.Error())
 		}
-		xl.Debug("%s: %v", msgType, req)
-		c.runner.Add(&req, nil)
+		xl.Debug("%s: %#v", msgType, req)
+		c.runner.Add(req, nil)
 	default:
 		xl.Error("unknown msg type %s", msgType)
 	}
