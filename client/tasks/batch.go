@@ -21,22 +21,18 @@ func init() {
 	RegisterTask("batch", NewBatchTask)
 }
 
-func (s *BatchTask) Start() error {
+func (s *BatchTask) Run() (interface{}, error) {
 	xl := xlog.FromContextSafe(s.ctx)
 
 	r, ok := s.handler.(*Runner)
 	if !ok {
-		return errors.New("error object")
+		return nil, errors.New("error object")
 	}
 	for _, t := range s.config.Tasks {
 		xl.Debug("%s: create sub task:%s", s.Info.Task, t.Task)
 		r.Add(t, s)
 	}
-	return nil
-}
-
-func (s *BatchTask) Stop() error {
-	return nil
+	return "Done", nil
 }
 
 func NewBatchTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {

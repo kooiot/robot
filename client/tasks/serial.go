@@ -12,6 +12,11 @@ import (
 	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
+type SerialResult struct {
+	Ping common.StreamResult `json:"ping"`
+	Pong common.StreamResult `json:"pong"`
+}
+
 type SerialTask struct {
 	common.TaskBase
 	ctx     context.Context
@@ -28,21 +33,33 @@ func init() {
 	RegisterTask("serial", NewSerialTask)
 }
 
-func (s *SerialTask) Start() error {
+func (s *SerialTask) Run() (interface{}, error) {
 	err := s.src_port.Open()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = s.dst_port.Open()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	s.src.Start()
 	s.dst.Start()
-	return nil
+	s.src.Wait()
+	s.dst.Wait()
+
+	return &msg.TaskResultDetail{
+		Result: true,
+		Info:   "Done",
+		Detail: SerialResult{
+			Ping: s.src.Result,
+			Pong: s.src.Result,
+		},
+	}, nil
 }
 
-func (s *SerialTask) Stop() error {
+func (s *SerialTask) Abort() error {
+	s.src.Stop()
+	s.dst.Stop()
 	return nil
 }
 
@@ -77,7 +94,7 @@ func NewSerialTask(ctx context.Context, handler common.TaskHandler, info msg.Tas
 		dst_port: dest,
 	}
 
-	t.src = helper.NewPingPong(ctx, t, handler, src_config, src_stream)
-	t.dst = helper.NewPingPong(ctx, t, handler, dest_config, dest_stream)
+	t.src = helper.NewPingPong(ctx, src_config, src_stream)
+	t.dst = helper.NewPingPong(ctx, dest_config, dest_stream)
 	return t
 }

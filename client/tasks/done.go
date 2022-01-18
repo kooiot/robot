@@ -43,9 +43,7 @@ func (s *DoneTask) Blink() {
 	}
 }
 
-func (s *DoneTask) Start() error {
-	// Make ourself as finished
-	s.handler.OnSuccess(s)
+func (s *DoneTask) Run() (interface{}, error) {
 	// Wait for other tasks
 	s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResultDetail) {
 		if result.Result {
@@ -57,11 +55,7 @@ func (s *DoneTask) Start() error {
 			go s.Blink()
 		}
 	})
-	return nil
-}
-
-func (s *DoneTask) Stop() error {
-	return nil
+	return "Done", nil
 }
 
 func NewDoneTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {

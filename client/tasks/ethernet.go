@@ -24,34 +24,30 @@ func init() {
 	RegisterTask("ethernet", NewEthernetTask)
 }
 
-func (s *EthernetTask) Start() error {
-	go s.run()
-	return nil
-}
-
-func (s *EthernetTask) run() {
-	xl := xlog.FromContextSafe(s.ctx)
+func (s *EthernetTask) Init() error {
 	cmd := exec.Command("sh", "-c", "sysctl -w net.ipv4.ping_group_range=\"0   2147483647\"")
 	err := cmd.Run()
 	if err != nil {
-		s.handler.OnError(s, err)
-		return
+		return err
 	}
 
 	for _, v := range s.config.Init {
 		cmd := exec.Command("sh", "-c", v)
 		err := cmd.Run()
 		if err != nil {
-			s.handler.OnError(s, err)
-			return
+			return err
 		}
 	}
+	return nil
+}
+
+func (s *EthernetTask) Run() (interface{}, error) {
+	xl := xlog.FromContextSafe(s.ctx)
 
 	time.Sleep(3 * time.Second)
 	pinger, err := ping.NewPinger(s.config.PingAddr)
 	if err != nil {
-		s.handler.OnError(s, errors.New("pinger initialization failure"))
-		return
+		return nil, errors.New("pinger initialization failure")
 	}
 	pinger.Count = 3
 
@@ -60,22 +56,17 @@ func (s *EthernetTask) run() {
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
 	if err != nil {
-		s.handler.OnError(s, err)
-		return
+		return nil, err
 	}
 
 	stats := pinger.Statistics() // get send/receive/duplicate/rtt stats
-	stats_str, _ := json.Marshal(stats)
 
 	if stats.PacketsRecv > 0 {
-		s.handler.OnSuccess(s)
+		return stats, nil
 	} else {
-		s.handler.OnError(s, errors.New("failed, statistics:"+string(stats_str)))
+		stats_str, _ := json.Marshal(stats)
+		return nil, errors.New("failed, statistics:" + string(stats_str))
 	}
-}
-
-func (s *EthernetTask) Stop() error {
-	return nil
 }
 
 func NewEthernetTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {

@@ -23,44 +23,37 @@ func init() {
 	RegisterTask("rtc", NewRTCTask)
 }
 
-func (s *RTCTask) Start() error {
-	go s.run()
-	return nil
-}
-
-func (s *RTCTask) run() {
+func (t *RTCTask) Run() (interface{}, error) {
+	xl := xlog.FromContextSafe(t.ctx)
 	cmd := "hwclock -w"
-	if len(s.config.File) > 0 {
-		cmd += " -f " + s.config.File
+	if len(t.config.File) > 0 {
+		cmd += " -f " + t.config.File
 	}
-	err := exec.Command("sh", "-c", cmd).Wait()
+	xl.Debug("Run: %s", cmd)
+	err := exec.Command("sh", "-c", cmd).Run()
 	if err != nil {
-		s.handler.OnError(s, err)
-		return
+		return nil, err
 	}
 
 	time.Sleep(10 * time.Second)
 	cmd = "hwclock -r"
-	if len(s.config.File) > 0 {
-		cmd += " -f " + s.config.File
+	if len(t.config.File) > 0 {
+		cmd += " -f " + t.config.File
 	}
+	xl.Debug("Run: %s", cmd)
 	out, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
-		s.handler.OnError(s, err)
-		return
+		return nil, err
 	}
-	rtc_now, _ := time.Parse("2006-01-02 15:04:05", string(out[:19]))
+	time_len := len(time.ANSIC)
+	rtc_now, _ := time.Parse(time.ANSIC, string(out[:time_len]))
 
 	diff := time.Since(rtc_now)
 	if diff > time.Second {
-		s.handler.OnError(s, errors.New("failed, diff:"+diff.String()))
+		return nil, errors.New("failed, diff:" + diff.String())
 	} else {
-		s.handler.OnSuccess(s)
+		return "Done", nil
 	}
-}
-
-func (s *RTCTask) Stop() error {
-	return nil
 }
 
 func NewRTCTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {

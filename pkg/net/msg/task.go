@@ -7,7 +7,7 @@ const (
 	ST_RUN    StatusType = 1
 	ST_FAILED StatusType = 2
 	ST_DONE   StatusType = 4
-	// ST_SPAWN  StatusType = 8
+	ST_SPAWN  StatusType = 8
 )
 
 type Task struct {

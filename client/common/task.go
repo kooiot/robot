@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 
 	"github.com/kooiot/robot/pkg/net/msg"
 )
@@ -9,8 +10,9 @@ import (
 type Task interface {
 	ID() string
 	UUID() string
-	Start() error
-	Stop() error
+	Init() error
+	Run() (interface{}, error)
+	Abort() error
 }
 
 type TaskBase struct {
@@ -25,6 +27,14 @@ func (t *TaskBase) UUID() string {
 	return t.Info.UUID
 }
 
+func (t *TaskBase) Init() error {
+	return nil
+}
+
+func (t *TaskBase) Abort() error {
+	return errors.New("abort not implemented")
+}
+
 func NewTaskBase(info msg.Task) TaskBase {
 	return TaskBase{
 		Info: info,
@@ -36,10 +46,6 @@ type TaskWait func(task Task, result msg.TaskResultDetail)
 
 // Task Handler 接口
 type TaskHandler interface {
-	OnStart(Task) error
-	OnError(Task, error) error
-	OnSuccess(Task) error
-	OnResult(Task, msg.TaskResultDetail) error
 	Spawn(creator TaskCreator, info msg.Task, parent Task) Task
 	Wait(Task, TaskWait) error
 }

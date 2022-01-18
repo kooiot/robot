@@ -25,11 +25,6 @@ func init() {
 	RegisterTask("usb", NewUSBTask)
 }
 
-func (s *USBTask) Start() error {
-	go s.run()
-	return nil
-}
-
 func (s *USBTask) hasIds() (bool, error) {
 	out, err := exec.Command("lsusb").Output()
 	if err != nil {
@@ -64,12 +59,11 @@ func (s *USBTask) hasNoIds() (bool, error) {
 	return ret, err
 }
 
-func (s *USBTask) run() {
+func (s *USBTask) Run() (interface{}, error) {
 	time.Sleep(3 * time.Second)
 	ret, err := s.hasIds()
 	if !ret {
-		s.handler.OnError(s, err)
-		return
+		return nil, err
 	}
 	if len(s.config.Reset) > 0 {
 		// Test reset
@@ -77,28 +71,24 @@ func (s *USBTask) run() {
 
 		err = reset.Set(1)
 		if nil != err {
-			s.handler.OnError(s, err)
-			return
+			return nil, err
 		}
 		time.Sleep(2 * time.Second)
 
 		ret, err := s.hasNoIds()
 		if !ret {
-			s.handler.OnError(s, errors.New("usb reset trigger failed, error:"+err.Error()))
-			return
+			return nil, errors.New("usb reset trigger failed, error:" + err.Error())
 		}
 
 		err = reset.Set(0)
 		if nil != err {
-			s.handler.OnError(s, err)
-			return
+			return nil, err
 		}
 		time.Sleep(15 * time.Second)
 
 		ret, err = s.hasIds()
 		if !ret {
-			s.handler.OnError(s, errors.New("usb reset backover failed, error:"+err.Error()))
-			return
+			return nil, errors.New("usb reset backover failed, error:" + err.Error())
 		}
 	}
 	if len(s.config.Power) > 0 {
@@ -107,35 +97,26 @@ func (s *USBTask) run() {
 
 		err = power.Set(0)
 		if nil != err {
-			s.handler.OnError(s, err)
-			return
+			return nil, err
 		}
 		time.Sleep(2 * time.Second)
 
 		ret, err := s.hasNoIds()
 		if !ret {
-			s.handler.OnError(s, errors.New("usb power down failed, error:"+err.Error()))
-			return
+			return nil, errors.New("usb power down failed, error:" + err.Error())
 		}
 		err = power.Set(1)
 		if nil != err {
-			s.handler.OnError(s, err)
-			return
+			return nil, err
 		}
 		time.Sleep(15 * time.Second)
 
 		ret, err = s.hasIds()
 		if !ret {
-			s.handler.OnError(s, errors.New("usb power up failed, error:"+err.Error()))
-			return
+			return nil, errors.New("usb power up failed, error:" + err.Error())
 		}
 	}
-
-	s.handler.OnSuccess(s)
-}
-
-func (s *USBTask) Stop() error {
-	return nil
+	return "Done", nil
 }
 
 func NewUSBTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {

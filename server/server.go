@@ -85,24 +85,19 @@ func (s *Server) get_task_output_dir() string {
 func (s *Server) handle_login(c *gev.Connection, req *msg.Login) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
 	xl.Trace("received login: %#v", req)
-
-	var client_id int32
 	var client *common.Client
 
-	if client = s.get_client_by_id(req.ClientID); client == nil {
-		client_id = atomic.AddInt32(&s.client_next_id, 1)
-		client = common.NewClient(client_id, c, req)
-	} else {
-		if client.Conn != nil {
-			s.send_message(c, "login.resp", &msg.LoginResp{
-				ClientID: req.ClientID,
-				ID:       -1,
-				Reason:   "Already connected",
-			})
-			return nil
-		}
-		client_id = client.ID
+	if client = s.get_client_by_id(req.ClientID); client != nil {
+		s.send_message(c, "login.resp", &msg.LoginResp{
+			ClientID: req.ClientID,
+			ID:       -1,
+			Reason:   "Already connected",
+		})
+		return nil
 	}
+
+	client_id := atomic.AddInt32(&s.client_next_id, 1)
+	client = common.NewClient(client_id, c, req)
 	client.Conn = c
 	client.LastHeartbeat = time.Now()
 
@@ -218,7 +213,7 @@ func (s *Server) handle_heartbeat(c *gev.Connection, req *msg.HeartBeat) interfa
 
 func (s *Server) handle_task_update(c *gev.Connection, req *msg.Task) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
-	xl.Debug("received task: %#v", req)
+	xl.Debug("received task[%s] update", req.ID)
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
 		s.client_task_store.TaskUpdate(cli.Info.ClientID, req)
@@ -230,7 +225,7 @@ func (s *Server) handle_task_update(c *gev.Connection, req *msg.Task) interface{
 
 func (s *Server) handle_task_result(c *gev.Connection, req *msg.TaskResult) interface{} {
 	xl := xlog.FromContextSafe(s.ctx)
-	xl.Debug("received result: %#v", req.Task)
+	xl.Debug("received task[%s] result: %#v", req.Task.ID, req.Detail)
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
 		s.client_task_store.TaskResult(cli.Info.ClientID, req)
@@ -288,7 +283,7 @@ func (s *Server) OnClose(c *gev.Connection) {
 	cli := s.get_client_by_conn(c)
 	if cli != nil {
 		s.client_task_store.Close(cli.Info.ClientID, errors.New("connection closed"))
-		cli.Conn = nil
+		s.remove_client(cli)
 	}
 }
 
@@ -305,14 +300,11 @@ func (s *Server) worker() {
 	hbCheck := time.NewTicker(time.Second)
 	defer hbCheck.Stop()
 
-	for {
-		select {
-		case <-hbCheck.C:
-			if atomic.LoadUint32(&s.exit) != 0 {
-				return
-			}
-			s.check_heartbeat()
+	for range hbCheck.C {
+		if atomic.LoadUint32(&s.exit) != 0 {
+			return
 		}
+		s.check_heartbeat()
 	}
 }
 

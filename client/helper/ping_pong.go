@@ -12,7 +12,6 @@ import (
 	"github.com/Allenxuxu/toolkit/sync/atomic"
 	"github.com/kooiot/robot/client/common"
 	"github.com/kooiot/robot/client/port"
-	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/util/xlog"
 	"github.com/npat-efault/crc16"
 )
@@ -24,13 +23,11 @@ type PingPongConfig struct {
 }
 
 type PingPong struct {
-	ctx     context.Context
-	Config  PingPongConfig      `json:"config"`
-	Result  common.StreamResult `json:"result"`
-	task    common.Task
-	handler common.TaskHandler
-	stream  *port.Stream
-	stop    atomic.Bool
+	ctx    context.Context
+	Config PingPongConfig      `json:"config"`
+	Result common.StreamResult `json:"result"`
+	stream *port.Stream
+	stop   atomic.Bool
 }
 
 var SK = []byte("AAA")
@@ -45,6 +42,15 @@ func (c *PingPong) Start() {
 
 func (c *PingPong) Stop() {
 	c.stop.Set(true)
+}
+
+func (c *PingPong) Wait() {
+	for {
+		if c.stop.Get() {
+			break
+		}
+		time.Sleep(time.Second)
+	}
 }
 
 func (c *PingPong) genMsg() []byte {
@@ -82,7 +88,7 @@ func (c *PingPong) genMsg() []byte {
 	return b.Bytes()
 }
 
-func (c *PingPong) run() error {
+func (c *PingPong) run() {
 	xl := xlog.FromContextSafe(c.ctx)
 	c.Result.SendSpeed = 0
 	c.Result.RecvSpeed = 0
@@ -93,6 +99,10 @@ func (c *PingPong) run() error {
 	recv_total := 0
 	err_total := 0
 	begin_time := time.Now()
+
+	// Stop stream
+	defer c.stream.Stop()
+	defer c.stop.Set(true)
 
 	xl.Debug("PingPong test start. config: %#v", c.Config)
 
@@ -190,32 +200,19 @@ func (c *PingPong) run() error {
 	c.Result.RecvSpeed = float64(recv_total) / time.Since(begin_time).Seconds()
 
 	xl.Debug("PingPong test finished: %#v", c.Result)
-	result := msg.TaskResultDetail{
-		Result: true,
-		Info:   "Done",
-		Detail: c.Result,
-	}
-	c.handler.OnResult(c.task, result)
-
-	// Stop stream
-	defer c.stream.Stop()
-
-	return nil
 }
 
-func NewPingPong(ctx context.Context, task common.Task, handler common.TaskHandler, c PingPongConfig, stream *port.Stream) *PingPong {
+func NewPingPong(ctx context.Context, c PingPongConfig, stream *port.Stream) *PingPong {
 	if c.MaxMsgSize == 0 {
 		c.MaxMsgSize = 512
 	}
 
 	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("PingPong")
 	o := PingPong{
-		ctx:     xlog.NewContext(ctx, xl),
-		Config:  c,
-		task:    task,
-		handler: handler,
-		stream:  stream,
-		stop:    atomic.Bool{},
+		ctx:    xlog.NewContext(ctx, xl),
+		Config: c,
+		stream: stream,
+		stop:   atomic.Bool{},
 	}
 
 	return &o

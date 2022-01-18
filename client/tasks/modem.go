@@ -25,25 +25,18 @@ func init() {
 	RegisterTask("modem", NewModemTask)
 }
 
-func (s *ModemTask) Start() error {
-	go s.run()
-	return nil
-}
-
-func (s *ModemTask) run() {
+func (s *ModemTask) Run() (interface{}, error) {
 	xl := xlog.FromContextSafe(s.ctx)
 	cmd := exec.Command("sh", "-c", "sysctl -w net.ipv4.ping_group_range=\"0   2147483647\"")
 	err := cmd.Run()
 	if err != nil {
-		s.handler.OnError(s, err)
-		return
+		return nil, err
 	}
 
 	time.Sleep(5 * time.Second)
 	pinger, err := ping.NewPinger(s.config.PingAddr)
 	if err != nil {
-		s.handler.OnError(s, errors.New("pinger initialization failure"))
-		return
+		return nil, errors.New("pinger initialization failure")
 	}
 	pinger.Count = 3
 
@@ -52,8 +45,7 @@ func (s *ModemTask) run() {
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
 	if err != nil {
-		s.handler.OnError(s, err)
-		return
+		return nil, err
 	}
 
 	stats := pinger.Statistics() // get send/receive/duplicate/rtt stats
@@ -66,19 +58,16 @@ func (s *ModemTask) run() {
 
 		t := msg.Task{}
 		t.UUID = uuid.NewV4().String()
+		t.ID = s.TaskBase.ID() + ".usb"
 		t.Task = "usb"
 		t.Description = "Sub task from modem task"
 		t.Option = s.config.USB
 
 		s.handler.Spawn(NewUSBTask, t, s)
-		// s.handler.OnSuccess(s)
+		return "Done", nil
 	} else {
-		s.handler.OnError(s, errors.New("failed, statistics:"+string(stats_str)))
+		return nil, errors.New("failed, statistics:" + string(stats_str))
 	}
-}
-
-func (s *ModemTask) Stop() error {
-	return nil
 }
 
 func NewModemTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
