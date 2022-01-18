@@ -16,5 +16,5 @@ conf/client/robot-client
 *.un~
 *.swp
 latest_log
-log/
+*.log
 
