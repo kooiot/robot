@@ -13,10 +13,10 @@ proto:
 	protoc --go_out=pkg/net/proto pkg/net/proto/*.proto 
 
 robot-client:
-	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/robot-client ./cmd/client
+	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/robot-client ./cmd/robot-client
 
 robot-server:
-	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/robot-server ./cmd/server
+	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/robot-server ./cmd/robot-server
 
 clean:
 	rm -f ./bin/robot-client

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/kooiot/robot/cmd/server/sub"
+	"github.com/kooiot/robot/cmd/robot-client/sub"
 )
 
 func main() {
