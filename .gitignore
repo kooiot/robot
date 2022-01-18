@@ -8,8 +8,8 @@ dist/
 output/
 .idea/
 
-conf/server/robot-server
-conf/client/robot-client
+conf/robot-server/robot-server
+conf/robot-client/robot-client
 
 # Cache
 *~
