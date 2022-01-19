@@ -10,6 +10,7 @@ output/
 
 conf/robot-server/robot-server
 conf/robot-client/robot-client
+conf/robot-pong/robot-pong
 
 # Cache
 *~

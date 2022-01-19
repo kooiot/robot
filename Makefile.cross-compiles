@@ -16,10 +16,13 @@ app:
 		target_suffix=$${os}_$${arch};\
 		echo "Build $${os}-$${arch}...";\
 		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} GOMIPS=$${gomips} go build -trimpath -ldflags "$(LDFLAGS)" -o ./release/robot-client_$${target_suffix} ./cmd/robot-client;\
+		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} GOMIPS=$${gomips} go build -trimpath -ldflags "$(LDFLAGS)" -o ./release/robot-pong$${target_suffix} ./cmd/robot-pong;\
 		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} GOMIPS=$${gomips} go build -trimpath -ldflags "$(LDFLAGS)" -o ./release/robot-server_$${target_suffix} ./cmd/robot-server;\
 		echo "Build $${os}-$${arch} done";\
 	)
 	@mv ./release/robot-client_windows_386 ./release/robot-client_windows_386.exe
+	@mv ./release/robot-pong_windows_386 ./release/robot-pong_windows_386.exe
 	@mv ./release/robot-server_windows_386 ./release/robot-server_windows_386.exe
 	@mv ./release/robot-client_windows_amd64 ./release/robot-client_windows_amd64.exe
+	@mv ./release/robot-pong_windows_amd64 ./release/robot-pong_windows_amd64.exe
 	@mv ./release/robot-server_windows_amd64 ./release/robot-server_windows_amd64.exe

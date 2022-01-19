@@ -35,7 +35,7 @@ func Minor(v string) int64 {
 // add every case there if server will not accept client's protocol and return false
 func Compat(client string) (ok bool, msg string) {
 	if LessThan(client, "0.18.0") {
-		return false, "Please upgrade your iot-tun-client version to at least 0.18.0"
+		return false, "Please upgrade your robot-client version to at least 0.18.0"
 	}
 	return true, ""
 }

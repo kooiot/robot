@@ -351,13 +351,13 @@ func (s *Server) OutputDir() string {
 	}
 }
 
-func NewServer(cfg *config.ServerConf, cfgFile string) *Server {
+func NewServer(cfg *config.ServerConf, cfg_file string) *Server {
 	ctx, cancel := context.WithCancel(context.Background())
 	handler := &Server{
 		ctx:            xlog.NewContext(ctx, xlog.New()),
 		cancel:         cancel,
 		config:         cfg,
-		config_file:    cfgFile,
+		config_file:    cfg_file,
 		send_chn:       make(chan *msg.Message, 100),
 		read_chn:       make(chan *msg.Message, 100),
 		client_next_id: 0,

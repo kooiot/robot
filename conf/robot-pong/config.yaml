@@ -1,0 +1,12 @@
+ports:
+  -
+    port: /dev/ttyS1
+    baudrate: 115200
+  -
+    port: /dev/ttyS2
+    baudrate: 115200
+
+log:
+  link: latest_log
+  dir: log
+  level: debug

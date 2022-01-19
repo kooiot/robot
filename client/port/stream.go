@@ -9,6 +9,9 @@ import (
 	"github.com/kooiot/robot/client/common"
 )
 
+var ErrSndTimeout = errors.New("send timeout")
+var ErrRcvTimeout = errors.New("receive timeout")
+
 type StreamParser func(*ringbuffer.RingBuffer) ([]byte, error)
 
 type Stream struct {
@@ -82,7 +85,7 @@ func (s *Stream) Send(data []byte, timeout time.Duration) error {
 		}
 		time.Sleep(10 * time.Millisecond)
 		if time.Since(begin) > timeout {
-			return errors.New("timeout")
+			return ErrSndTimeout
 		}
 	}
 
@@ -126,7 +129,7 @@ func (s *Stream) Request(data []byte, parser StreamParser, timeout time.Duration
 				s.buffer.RetrieveAll()
 				s.lock.Unlock()
 			}
-			return nil, errors.New("timeout")
+			return nil, ErrRcvTimeout
 		}
 	}
 

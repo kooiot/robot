@@ -23,33 +23,33 @@ type Service struct {
 	exit uint32 // 0 means not exit
 }
 
-func (c *Service) Run() error {
-	client := NewClient(c.config, c.ctx)
+func (s *Service) Run() error {
+	client := NewClient(s.config, s.ctx)
 
-	c.client_lock.Lock()
-	c.client = client
-	c.client_lock.Unlock()
+	s.client_lock.Lock()
+	s.client = client
+	s.client_lock.Unlock()
 	go client.Run()
 
-	go c.keepWorking()
+	go s.keepWorking()
 
-	<-c.ctx.Done()
+	<-s.ctx.Done()
 	return nil
 }
 
-func (c *Service) keepWorking() {
-	xl := xlog.FromContextSafe(c.ctx)
+func (s *Service) keepWorking() {
+	xl := xlog.FromContextSafe(s.ctx)
 
 	maxDelayTime := 20 * time.Second
 	delayTime := time.Second
 
 	for {
 		select {
-		case <-c.client.ConnectedChn():
+		case <-s.client.ConnectedChn():
 			delayTime = time.Second
-		case <-c.client.ClosedDoneChn():
+		case <-s.client.ClosedDoneChn():
 			time.Sleep(delayTime)
-			if atomic.LoadUint32(&c.exit) != 0 {
+			if atomic.LoadUint32(&s.exit) != 0 {
 				return
 			}
 
@@ -59,11 +59,11 @@ func (c *Service) keepWorking() {
 			}
 
 			xl.Info("try to reconnect to server...")
-			client := NewClient(c.config, c.ctx)
+			client := NewClient(s.config, s.ctx)
 
-			c.client_lock.Lock()
-			c.client = client
-			c.client_lock.Unlock()
+			s.client_lock.Lock()
+			s.client = client
+			s.client_lock.Unlock()
 
 			client.Run()
 		}
