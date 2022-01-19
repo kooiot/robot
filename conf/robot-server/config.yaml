@@ -10,6 +10,7 @@ log:
 
 tasks:
   folder: autos
+  output: .
   autos:
     -
       config: x1.yaml

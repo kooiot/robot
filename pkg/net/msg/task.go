@@ -76,4 +76,5 @@ type LedsTask struct {
 
 type DoneTask struct {
 	Leds []string `mapstructure:"leds" json:"leds"`
+	Halt bool     `mapstructure:"halt" json:"halt"`
 }

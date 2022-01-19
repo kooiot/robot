@@ -7,9 +7,10 @@ import (
 )
 
 type CommonConf struct {
-	Bind  string `mapstructure:"bind" json:"bind"`   // default 0.0.0.0
-	Port  int    `mapstructure:"port" json:"port"`   // default 7080
-	Loops int    `mapstructure:"loops" json:"loops"` // default is 0
+	Bind   string `mapstructure:"bind" json:"bind"`     // default 0.0.0.0
+	Port   int    `mapstructure:"port" json:"port"`     // default 7080
+	Loops  int    `mapstructure:"loops" json:"loops"`   // default is 0
+	Output string `mapstructure:"output" json:"output"` // default is .
 }
 
 type AutoMatch struct {

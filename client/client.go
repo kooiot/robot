@@ -309,7 +309,7 @@ func NewClient(cfg *config.ClientConf, ctx context.Context) *Client {
 		writerShutdown:     shutdown.New(),
 		msgHandlerShutdown: shutdown.New(),
 	}
-	cli.runner = tasks.NewRunner(ctx, &cfg.Runner, cli)
+	cli.runner = tasks.NewRunner(ctx, cli)
 
 	return cli
 }

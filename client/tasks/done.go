@@ -14,6 +14,7 @@ import (
 type DoneTask struct {
 	common.TaskBase
 	ctx     context.Context
+	xl      *xlog.Logger
 	config  msg.DoneTask
 	handler common.TaskHandler
 	parent  common.Task
@@ -43,18 +44,38 @@ func (s *DoneTask) Blink() {
 	}
 }
 
+func (s *DoneTask) AllOn() {
+	leds := []*hardware.NamedLed{}
+	for _, name := range s.config.Leds {
+		leds = append(leds, hardware.NewNamedLed(name))
+	}
+	// Blink the LEDs
+	for {
+		for _, led := range leds {
+			led.Set(255)
+		}
+	}
+}
+
 func (s *DoneTask) Run() (interface{}, error) {
+	xl := s.xl
 	// Wait for other tasks
-	s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResultDetail) {
+	err := s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResultDetail) {
+		xl.Info("done got result: %#v", result)
 		if result.Result {
 			r := s.handler.(*Runner)
-			if r != nil {
+			if r != nil && s.config.Halt {
 				r.Halt()
+			} else {
+				s.AllOn()
 			}
 		} else {
 			go s.Blink()
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
 	return "Done", nil
 }
 
@@ -68,6 +89,7 @@ func NewDoneTask(ctx context.Context, handler common.TaskHandler, info msg.Task,
 	return &DoneTask{
 		TaskBase: common.NewTaskBase(info),
 		ctx:      xlog.NewContext(ctx, xl),
+		xl:       xl,
 		config:   conf,
 		handler:  handler,
 		parent:   parent,

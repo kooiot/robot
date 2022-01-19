@@ -17,14 +17,9 @@ type CommonConf struct {
 	System   string `mapstructure:"system" json:"system"`
 }
 
-type RunnerConf struct {
-	Haltable bool `mapstructure:"haltable" json:"haltable"`
-}
-
 type ClientConf struct {
 	Common CommonConf  `mapstructure:"common" json:"common"`
 	Log    log.LogConf `mapstructure:"log" json:"log"`
-	Runner RunnerConf  `mapstructure:"runner" json:"runner"`
 }
 
 // GetDefaultClientConf returns a client configuration with default values.

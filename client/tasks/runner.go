@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/kooiot/robot/client/common"
-	"github.com/kooiot/robot/client/config"
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/util/log"
 	"github.com/kooiot/robot/pkg/util/xlog"
@@ -34,7 +33,6 @@ func RegisterTask(task_name string, creator common.TaskCreator) {
 
 type Runner struct {
 	ctx      context.Context
-	conf     *config.RunnerConf
 	reporter common.Reporter
 	tasks    map[string]*TaskInfo
 	lock     sync.Mutex
@@ -141,7 +139,11 @@ func (r *Runner) OnResult(task common.Task, result msg.TaskResultDetail) error {
 	tinfo.Info.Status = tinfo.Info.Status &^ msg.ST_RUN
 	if result.Result {
 		tinfo.Info.Status |= msg.ST_DONE
-		xl.Info("task: %s done", task.ID())
+		if tinfo.Info.Status == msg.ST_DONE {
+			xl.Info("task: %s done", task.ID())
+		} else {
+			xl.Info("task: %s done. Spawned sub tasks", task.ID())
+		}
 	} else {
 		tinfo.Info.Status |= msg.ST_FAILED
 		xl.Error("task: %s failed. error: %#v", task.ID(), result)
@@ -273,7 +275,7 @@ func (r *Runner) Wait(task common.Task, wait common.TaskWait) error {
 	xl := xlog.FromContextSafe(r.ctx)
 	xl.Debug("Wait task %s", task.ID())
 	info := r.tasks[task.UUID()]
-	if info.Info.Status != msg.ST_NEW && info.Info.Status != msg.ST_RUN {
+	if info.Info.Status == msg.ST_DONE || info.Info.Status == msg.ST_FAILED {
 		return errors.New("task is completed already")
 	}
 
@@ -283,12 +285,10 @@ func (r *Runner) Wait(task common.Task, wait common.TaskWait) error {
 
 func (r *Runner) Halt() error {
 	xl := xlog.FromContextSafe(r.ctx)
-	if r.conf.Haltable {
-		_, err := exec.Command("sh", "-c", "sleep 3 && halt").Output()
-		if err != nil {
-			xl.Error("System halt error: %s", err.Error())
-			return err
-		}
+	_, err := exec.Command("sh", "-c", "sleep 3 && halt").Output()
+	if err != nil {
+		xl.Error("System halt error: %s", err.Error())
+		return err
 	}
 	return nil
 }
@@ -301,11 +301,10 @@ func (r *Runner) ReportResult(info *TaskInfo) error {
 	return nil
 }
 
-func NewRunner(ctx context.Context, conf *config.RunnerConf, reporter common.Reporter) *Runner {
+func NewRunner(ctx context.Context, reporter common.Reporter) *Runner {
 	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Runner")
 	return &Runner{
 		ctx:      xlog.NewContext(ctx, xl),
-		conf:     conf,
 		reporter: reporter,
 		tasks:    make(map[string]*TaskInfo),
 		lock:     sync.Mutex{},

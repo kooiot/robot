@@ -82,3 +82,4 @@ tasks:
         - "kooiot:green:bs"
         - "kooiot:green:cloud"
         - "kooiot:green:modem"
+      halt: true

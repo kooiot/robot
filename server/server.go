@@ -75,9 +75,9 @@ func (s *Server) send_message(c *gev.Connection, ctx string, data interface{}) e
 
 func (s *Server) get_task_output_dir() string {
 	xl := xlog.FromContextSafe(s.ctx)
-	config_dir := s.ConfigDir()
-	base_path := path.Join(config_dir, s.config.Tasks.Folder, "output")
-	xl.Info("Task loading from: %s", base_path)
+	output_dir := s.OutputDir()
+	base_path := path.Join(output_dir, "tasks")
+	xl.Info("Task output save to: %s", base_path)
 	os.MkdirAll(base_path, os.ModePerm)
 	return base_path
 }
@@ -332,6 +332,23 @@ func (s *Server) Close() {
 func (s *Server) ConfigDir() string {
 	base_path := path.Dir(s.config_file)
 	return base_path
+}
+
+func (s *Server) OutputDir() string {
+	output_dir := s.config.Common.Output
+	if len(output_dir) == 0 {
+		output_dir = "./output"
+	}
+
+	if path.IsAbs(output_dir) {
+		return output_dir
+	} else {
+		if cur, err := os.Getwd(); err != nil {
+			return "/mnt/data/robot"
+		} else {
+			return path.Join(cur, output_dir)
+		}
+	}
 }
 
 func NewServer(cfg *config.ServerConf, cfgFile string) *Server {
