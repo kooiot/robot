@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"os"
+	"io/ioutil"
 	"path"
 	"runtime/debug"
 	"strconv"
@@ -97,7 +97,7 @@ func (t *TaskStore) dump_tasks(info *TaskStoreInfo) {
 	if err != nil {
 		xl.Error("JSON.Marshal failure: %s", err.Error())
 	} else {
-		err = os.WriteFile(info.Output, data, 0644)
+		err = ioutil.WriteFile(info.Output, data, 0644)
 		if err != nil {
 			xl.Error("os.WriteFile to: %s failure: %s", info.Output, err.Error())
 		}
