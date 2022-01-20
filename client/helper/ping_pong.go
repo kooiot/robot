@@ -32,8 +32,8 @@ type PingPong struct {
 
 var SK = []byte("AAA")
 var EK = []byte("FFF")
-var hdr_len = 3 + 2
-var end_len = 3 + 2
+var HDR_LEN = 3 + 2
+var END_LEN = 3 + 2
 
 func (c *PingPong) Start() {
 	c.stop.Set(false)
@@ -81,7 +81,7 @@ func (c *PingPong) genMsg() []byte {
 
 	b.Write(EK)
 
-	if b.Len() != data_len+hdr_len+end_len {
+	if b.Len() != data_len+HDR_LEN+END_LEN {
 		panic("Message len incorrect")
 	}
 
@@ -120,7 +120,7 @@ func (c *PingPong) run() {
 			// Try to find the SK
 			for {
 				data := buffer.Bytes()
-				if buffer.Length() < hdr_len+end_len {
+				if buffer.Length() < HDR_LEN+END_LEN {
 					return nil, nil
 				}
 
@@ -145,32 +145,32 @@ func (c *PingPong) run() {
 			data_len := binary.BigEndian.Uint16(data[3:5])
 			// xl.Info("PingPong recv msg len: %d", data_len)
 
-			if len(data) < hdr_len+end_len+int(data_len) {
+			if len(data) < HDR_LEN+END_LEN+int(data_len) {
 				// xl.Info("len:%d data_len:%d", len(data), hdr_len+end_len+int(data_len))
 				return nil, nil
 			}
 
-			if !bytes.Equal(EK, data[hdr_len+int(data_len)+2:hdr_len+int(data_len)+5]) {
+			if !bytes.Equal(EK, data[HDR_LEN+int(data_len)+2:HDR_LEN+int(data_len)+5]) {
 				xl.Error("EK Check Error %d", len(data))
 				err_total += 1
 				buffer.Retrieve(1)
 				return nil, nil
 			} else {
 				// Retrieve buffer
-				buffer.Retrieve(hdr_len + end_len + int(data_len))
+				buffer.Retrieve(HDR_LEN + END_LEN + int(data_len))
 				// xl.Info("left size: %d", buffer.Length())
 
 				h := crc16.New(crc16.Modbus)
-				h.Write(data[hdr_len : hdr_len+int(data_len)])
-				crc_16 := binary.BigEndian.Uint16(data[hdr_len+int(data_len) : hdr_len+int(data_len)+2])
+				h.Write(data[HDR_LEN : HDR_LEN+int(data_len)])
+				crc_16 := binary.BigEndian.Uint16(data[HDR_LEN+int(data_len) : HDR_LEN+int(data_len)+2])
 				if crc_16 != h.Sum16() {
-					err_total += hdr_len + end_len + int(data_len)
+					err_total += HDR_LEN + END_LEN + int(data_len)
 					xl.Error("crc checking error")
 					return nil, errors.New("crc checking error")
 				} else {
 					// xl.Info("crc checking done: %x", crc_16)
 				}
-				return data[0 : hdr_len+end_len+int(data_len)], nil
+				return data[0 : HDR_LEN+END_LEN+int(data_len)], nil
 			}
 		}, time.Millisecond*1000)
 
