@@ -14,6 +14,7 @@ import (
 
 var (
 	cfgFile     string
+	workDir     string
 	showVersion bool
 
 	serverAddr string
@@ -29,6 +30,7 @@ func init() {
 	RegisterCommonFlags(rootCmd)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "./config.yaml", "config file of robot-client")
+	rootCmd.PersistentFlags().StringVarP(&workDir, "work_dir", "d", "", "work directory")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of robot-client")
 }
 
@@ -49,6 +51,9 @@ var rootCmd = &cobra.Command{
 		if showVersion {
 			fmt.Println(version.Full())
 			return nil
+		}
+		if len(workDir) > 0 {
+			os.Chdir(workDir)
 		}
 
 		// Do not show command usage here.
