@@ -6,4 +6,4 @@ common:
 log:
   link: latest_log
   dir: log
-  level: debug
+  level: info
