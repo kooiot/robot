@@ -20,3 +20,5 @@ require (
 	go.bug.st/serial v1.3.4
 	go.uber.org/zap v1.19.1
 )
+
+replace github.com/Allenxuxu/gev => github.com/kooiot/gev v0.3.1-0.20220121071430-3e7c75272c11
