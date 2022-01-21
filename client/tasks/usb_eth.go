@@ -14,56 +14,32 @@ import (
 	"github.com/kooiot/robot/pkg/util/xlog"
 )
 
-type USBTask struct {
+type USBETHTask struct {
 	common.TaskBase
 	ctx     context.Context
-	config  msg.USBTask
+	config  msg.USBETHTask
 	handler common.TaskHandler
 }
 
 func init() {
-	RegisterTask("usb", NewUSBTask)
+	RegisterTask("usb_eth", NewUSBTask)
 }
 
-func (s *USBTask) hasIds() (bool, error) {
-	out, err := exec.Command("lsusb").Output()
+func (s *USBETHTask) hasEth() (bool, error) {
+	out, err := exec.Command("sh", "-c", "cat /proc/net/dev").Output()
 	if err != nil {
 		return false, err
 	}
-	// log.Info("lsusb output: %s %#v", out, s.config.IDS)
 
-	ret := true
-	for i := 0; i < len(s.config.IDS); i++ {
-		if !bytes.Contains(out, []byte(s.config.IDS[i])) {
-			ret = false
-			err = errors.New("usb id " + s.config.IDS[i] + " missing")
-			break
-		}
+	if !bytes.Contains(out, []byte(s.config.Name+":")) {
+		return false, errors.New("ethernet " + s.config.Name + " missing")
 	}
-	return ret, err
+	return true, nil
 }
 
-func (s *USBTask) hasNoIds() (bool, error) {
-	out, err := exec.Command("lsusb").Output()
-	if err != nil {
-		return false, err
-	}
-	// log.Info("lsusb output: %s", out)
-
-	ret := true
-	for i := 0; i < len(s.config.IDS); i++ {
-		if bytes.Contains(out, []byte(s.config.IDS[i])) {
-			ret = false
-			err = errors.New("usb id " + s.config.IDS[i] + " found")
-			break
-		}
-	}
-	return ret, err
-}
-
-func (s *USBTask) Run() (interface{}, error) {
+func (s *USBETHTask) Run() (interface{}, error) {
 	time.Sleep(3 * time.Second)
-	ret, err := s.hasIds()
+	ret, err := s.hasEth()
 	if !ret {
 		return nil, err
 	}
@@ -80,7 +56,7 @@ func (s *USBTask) Run() (interface{}, error) {
 		var ret bool
 		for time.Since(now) < 5*time.Second {
 			time.Sleep(500 * time.Millisecond)
-			ret, err = s.hasNoIds()
+			ret, err = s.hasEth()
 			if ret {
 				break
 			}
@@ -98,7 +74,7 @@ func (s *USBTask) Run() (interface{}, error) {
 		now = time.Now()
 		for time.Since(now) < 15*time.Second {
 			time.Sleep(500 * time.Millisecond)
-			ret, err = s.hasIds()
+			ret, err = s.hasEth()
 			if ret {
 				break
 			}
@@ -119,7 +95,7 @@ func (s *USBTask) Run() (interface{}, error) {
 		var ret bool
 		for time.Since(now) < 5*time.Second {
 			time.Sleep(500 * time.Millisecond)
-			ret, err = s.hasNoIds()
+			ret, err = s.hasEth()
 			if ret {
 				break
 			}
@@ -127,7 +103,6 @@ func (s *USBTask) Run() (interface{}, error) {
 		if !ret {
 			return nil, errors.New("usb power down failed, error:" + err.Error())
 		}
-
 		err = power.Set(1)
 		if nil != err {
 			return nil, err
@@ -136,7 +111,7 @@ func (s *USBTask) Run() (interface{}, error) {
 		now = time.Now()
 		for time.Since(now) < 15*time.Second {
 			time.Sleep(500 * time.Millisecond)
-			ret, err = s.hasIds()
+			ret, err = s.hasEth()
 			if ret {
 				break
 			}
@@ -148,15 +123,15 @@ func (s *USBTask) Run() (interface{}, error) {
 	return "Done", nil
 }
 
-func NewUSBTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
+func NewUSBETHTask(ctx context.Context, handler common.TaskHandler, info msg.Task, parent common.Task) common.Task {
 	data, _ := json.Marshal(info.Option)
 
-	conf := msg.USBTask{}
+	conf := msg.USBETHTask{}
 	json.Unmarshal(data, &conf)
 	// log.Info("USB Task: %#v from: %#v", conf, info.Option)
 	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.USB")
 
-	return &USBTask{
+	return &USBETHTask{
 		ctx:      xlog.NewContext(ctx, xl),
 		TaskBase: common.NewTaskBase(info),
 		config:   conf,

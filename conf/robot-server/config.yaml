@@ -5,7 +5,7 @@ common:
 
 log:
   dir: log
-  level: info
+  level: debug
   filename: server.log
 
 tasks:
@@ -17,16 +17,22 @@ tasks:
       matches:
         -
           key: client_id
-          match: TRTX01*
+          match: TRTX01.+
+    -
+      config: x3.yaml
+      matches:
+        -
+          key: client_id
+          match: TRTX03.+
     -
       config: s1.yaml
       matches:
         -
           key: client_id
-          match: TRTS01*
+          match: TRTS01.+
     -
       config: k1.yaml
       matches:
         -
           key: client_id
-          match: TRTK01*
+          match: TRTK01.+

@@ -48,6 +48,12 @@ type RTCTask struct {
 	File string `mapstructure:"file" json:"file"`
 }
 
+type USBETHTask struct {
+	Name  string `mapstructure:"name" json:"name"`
+	Reset string `mapstructure:"reset" json:"reset"`
+	Power string `mapstructure:"power" json:"power"`
+}
+
 type USBTask struct {
 	IDS   []string `mapstructure:"ids" json:"ids"`
 	Reset string   `mapstructure:"reset" json:"reset"`

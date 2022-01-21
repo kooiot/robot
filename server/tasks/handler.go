@@ -99,15 +99,16 @@ func (h *TaskHandler) Init(server common.Server) error {
 	return nil
 }
 
-func matchString(pat string, value string) bool {
+func (h *TaskHandler) matchString(pat string, value string) bool {
 	var m = regexp.MustCompile(pat)
+	xl := xlog.FromContextSafe(h.ctx)
 
 	m_list := m.FindStringSubmatch(value)
-	// if m_list == nil {
-	// 	xl.Debug("Not matched %s - %s", pat, value)
-	// } else {
-	// 	xl.Debug("Task matched %s - %s", pat, value)
-	// }
+	if m_list == nil {
+		xl.Debug("Not matched %s - %s", pat, value)
+	} else {
+		xl.Debug("Task matched %s - %s  %#v", pat, value, m_list)
+	}
 	return m_list != nil
 }
 
@@ -118,13 +119,13 @@ func (h *TaskHandler) AfterLogin(conn *gev.Connection, client *common.Client) {
 		for _, m := range t.Matches {
 			switch m.Key {
 			case "client_id":
-				found = matchString(m.Match, client.Info.ClientID)
+				found = h.matchString(m.Match, client.Info.ClientID)
 			case "hardware":
-				found = matchString(m.Match, client.Info.Hardware)
+				found = h.matchString(m.Match, client.Info.Hardware)
 			case "hostname":
-				found = matchString(m.Match, client.Info.Hostname)
+				found = h.matchString(m.Match, client.Info.Hostname)
 			case "user":
-				found = matchString(m.Match, client.Info.User)
+				found = h.matchString(m.Match, client.Info.User)
 			default:
 				found = false
 			}

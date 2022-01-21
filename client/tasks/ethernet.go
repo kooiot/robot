@@ -43,6 +43,7 @@ func (s *EthernetTask) Init() error {
 
 func (s *EthernetTask) Run() (interface{}, error) {
 	xl := xlog.FromContextSafe(s.ctx)
+	xl.Info("Ethernet task start")
 
 	time.Sleep(3 * time.Second)
 	pinger, err := ping.NewPinger(s.config.PingAddr)
@@ -51,7 +52,7 @@ func (s *EthernetTask) Run() (interface{}, error) {
 	}
 	pinger.Count = 3
 
-	xl.Debug("Ethernet task start ping")
+	xl.Info("Ethernet task start ping")
 	// pinger.SetPrivileged(true)
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.
@@ -61,6 +62,7 @@ func (s *EthernetTask) Run() (interface{}, error) {
 
 	stats := pinger.Statistics() // get send/receive/duplicate/rtt stats
 
+	xl.Info("Ethernet task ping Done")
 	if stats.PacketsRecv > 0 {
 		return stats, nil
 	} else {
