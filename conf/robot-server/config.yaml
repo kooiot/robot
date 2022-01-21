@@ -4,9 +4,9 @@ common:
   loops: 0
 
 log:
-  link: latest_log
   dir: log
   level: info
+  filename: server.log
 
 tasks:
   folder: autos

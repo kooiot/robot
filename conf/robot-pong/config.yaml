@@ -7,6 +7,6 @@ ports:
     baudrate: 115200
 
 log:
-  link: latest_log
   dir: log
   level: info
+  filename: pong.log
