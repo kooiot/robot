@@ -15,12 +15,18 @@ tasks:
     -
       config: x1.yaml
       matches:
-        - 
+        -
           key: client_id
           match: TRTX01*
     -
+      config: s1.yaml
+      matches:
+        -
+          key: client_id
+          match: TRTS01*
+    -
       config: k1.yaml
       matches:
-        - 
+        -
           key: client_id
           match: TRTK01*

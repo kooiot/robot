@@ -38,7 +38,7 @@ type BatchTask struct {
 
 type SerialTask struct {
 	SrcPort    string `mapstructure:"src" json:"src"`
-	DestPort   string `mapstructure:"dst" json:"dst"`
+	DstPort    string `mapstructure:"dst" json:"dst"`
 	Baudrate   int    `mapstructure:"baudrate" json:"baudrate"`
 	Count      int    `mapstructure:"count" json:"count"`
 	MaxMsgSize int    `mapstructure:"max_msg_size" json:"max_msg_size"`

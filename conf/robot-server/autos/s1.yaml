@@ -1,0 +1,56 @@
+tasks:
+  - 
+    id: serial_com1
+    task: serial
+    desc: serial test com1
+    option:
+      src: /dev/ttyS1
+      baudrate: 115200
+      count: 100
+      max_msg_size: 500
+  - 
+    id: pcie_modem_test
+    task: modem
+    desc: 4G modem
+    option:
+      ping_addr: 8.8.8.8
+      usb:
+        ids:
+          - "2c7c:0125"
+        reset: "pcie_reset"
+        power: "pcie_power"
+  - 
+    id: eth0_ping
+    task: ethernet
+    desc: ETH0 ping test
+    option:
+      ping_addr: 192.168.1.139
+  - 
+    id: rtc_test
+    task: rtc
+    desc: RTC chip test
+    option:
+      file: /dev/rtc0
+  -
+    id: leds_test
+    task: leds
+    desc: Test LEDS
+    option:
+      leds:
+        - "kooiot:green:gs"
+        - "kooiot:green:bs"
+        - "kooiot:green:cloud"
+        - "kooiot:green:modem"
+      count: 50
+      span: 200
+  -
+    id: done
+    task: done
+    desc: Test done
+    option:
+      leds:
+        - "kooiot:green:gs"
+        - "kooiot:green:bs"
+        - "kooiot:green:cloud"
+        - "kooiot:green:modem"
+      halt: true

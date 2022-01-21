@@ -34,18 +34,28 @@ func init() {
 }
 
 func (s *SerialTask) Run() (interface{}, error) {
-	err := s.src_port.Open()
-	if err != nil {
-		return nil, err
+	if s.src_port != nil {
+		err := s.src_port.Open()
+		if err != nil {
+			return nil, err
+		}
+
+		s.src.Start()
 	}
-	err = s.dst_port.Open()
-	if err != nil {
-		return nil, err
+	if s.dst_port != nil {
+		err := s.dst_port.Open()
+		if err != nil {
+			return nil, err
+		}
+		s.dst.Start()
 	}
-	s.src.Start()
-	s.dst.Start()
-	s.src.Wait()
-	s.dst.Wait()
+
+	if s.src != nil {
+		s.src.Wait()
+	}
+	if s.dst != nil {
+		s.dst.Wait()
+	}
 
 	return &msg.TaskResultDetail{
 		Result: true,
@@ -58,8 +68,12 @@ func (s *SerialTask) Run() (interface{}, error) {
 }
 
 func (s *SerialTask) Abort() error {
-	s.src.Stop()
-	s.dst.Stop()
+	if s.src != nil {
+		s.src.Stop()
+	}
+	if s.dst != nil {
+		s.dst.Stop()
+	}
 	return nil
 }
 
@@ -69,20 +83,6 @@ func NewSerialTask(ctx context.Context, handler common.TaskHandler, info msg.Tas
 	conf := msg.SerialTask{}
 	json.Unmarshal(data, &conf)
 
-	src_stream := port.NewStream()
-	src, err := serial.NewSerial(src_stream, serial.Port(conf.SrcPort), serial.Baudrate(conf.Baudrate))
-	if err != nil {
-		return nil
-	}
-
-	dest_stream := port.NewStream()
-	dest, err := serial.NewSerial(dest_stream, serial.Port(conf.DestPort), serial.Baudrate(conf.Baudrate))
-	if err != nil {
-		return nil
-	}
-	src_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
-	dest_config := helper.PingPongConfig{IsPing: false, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
-
 	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix("Task.Serial")
 
 	t := &SerialTask{
@@ -90,11 +90,28 @@ func NewSerialTask(ctx context.Context, handler common.TaskHandler, info msg.Tas
 		ctx:      xlog.NewContext(ctx, xl),
 		config:   conf,
 		handler:  handler,
-		src_port: src,
-		dst_port: dest,
+	}
+	if len(conf.SrcPort) > 0 {
+		src_stream := port.NewStream()
+		src, err := serial.NewSerial(src_stream, serial.Port(conf.SrcPort), serial.Baudrate(conf.Baudrate))
+		if err != nil {
+			return nil
+		}
+		t.src_port = src
+		src_config := helper.PingPongConfig{IsPing: true, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
+		t.src = helper.NewPingPong(ctx, src_config, src_stream)
 	}
 
-	t.src = helper.NewPingPong(ctx, src_config, src_stream)
-	t.dst = helper.NewPingPong(ctx, dest_config, dest_stream)
+	if len(conf.DstPort) > 0 {
+		dest_stream := port.NewStream()
+		dest, err := serial.NewSerial(dest_stream, serial.Port(conf.DstPort), serial.Baudrate(conf.Baudrate))
+		if err != nil {
+			return nil
+		}
+		t.dst_port = dest
+		dest_config := helper.PingPongConfig{IsPing: false, Count: conf.Count, MaxMsgSize: conf.MaxMsgSize}
+		t.dst = helper.NewPingPong(ctx, dest_config, dest_stream)
+	}
+
 	return t
 }
