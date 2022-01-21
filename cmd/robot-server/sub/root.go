@@ -34,10 +34,10 @@ func init() {
 }
 
 func RegisterCommonFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&bindAddr, "bind_addr", "s", "0.0.0.0:7080", "server bind address")
-	cmd.PersistentFlags().StringVarP(&logLevel, "log_level", "", "info", "log level")
-	cmd.PersistentFlags().StringVarP(&logLink, "log_link", "", "latest_log", "latest log file link")
-	cmd.PersistentFlags().StringVarP(&logDir, "log_dir", "", "log", "log file folder")
+	cmd.PersistentFlags().StringVarP(&bindAddr, "bind_addr", "s", "", "server bind address")
+	cmd.PersistentFlags().StringVarP(&logLevel, "log_level", "", "", "log level")
+	cmd.PersistentFlags().StringVarP(&logLink, "log_link", "", "", "latest log file link")
+	cmd.PersistentFlags().StringVarP(&logDir, "log_dir", "", "", "log file folder")
 }
 
 var rootCmd = &cobra.Command{
@@ -87,9 +87,15 @@ func runServer(cfgFilePath string) error {
 			return err
 		}
 	}
-	cfg.Log.Dir = logDir
-	cfg.Log.Link = logLink
-	cfg.Log.Level = logLevel
+	if len(logDir) > 0 {
+		cfg.Log.Dir = logDir
+	}
+	if len(logLink) > 0 {
+		cfg.Log.Link = logLink
+	}
+	if len(logLevel) > 0 {
+		cfg.Log.Level = logLevel
+	}
 
 	cfg.Complete()
 	if err = cfg.Validate(); err != nil {

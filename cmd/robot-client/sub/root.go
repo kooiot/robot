@@ -35,11 +35,11 @@ func init() {
 }
 
 func RegisterCommonFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&serverAddr, "server_addr", "s", "127.0.0.1:7000", "robot server's address")
+	cmd.PersistentFlags().StringVarP(&serverAddr, "server_addr", "s", "", "robot server's address")
 	cmd.PersistentFlags().StringVarP(&clientID, "client_id", "", "", "robot client id")
-	cmd.PersistentFlags().StringVarP(&logLevel, "log_level", "", "info", "log level")
-	cmd.PersistentFlags().StringVarP(&logLink, "log_link", "", "latest_log", "latest log file link")
-	cmd.PersistentFlags().StringVarP(&logDir, "log_dir", "", "log", "log file folder")
+	cmd.PersistentFlags().StringVarP(&logLevel, "log_level", "", "", "log level")
+	cmd.PersistentFlags().StringVarP(&logLink, "log_link", "", "", "latest log file link")
+	cmd.PersistentFlags().StringVarP(&logDir, "log_dir", "", "", "log file folder")
 }
 
 var rootCmd = &cobra.Command{
@@ -92,9 +92,15 @@ func runClient(cfgFilePath string) error {
 	if len(clientID) > 0 {
 		cfg.Common.ClientID = clientID
 	}
-	cfg.Log.Dir = logDir
-	cfg.Log.Link = logLink
-	cfg.Log.Level = logLevel
+	if len(logDir) > 0 {
+		cfg.Log.Dir = logDir
+	}
+	if len(logLink) > 0 {
+		cfg.Log.Link = logLink
+	}
+	if len(logLevel) > 0 {
+		cfg.Log.Level = logLevel
+	}
 
 	cfg.Complete()
 	if err = cfg.Validate(); err != nil {

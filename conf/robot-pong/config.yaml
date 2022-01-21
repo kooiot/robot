@@ -5,3 +5,8 @@ ports:
   -
     port: /dev/ttyS2
     baudrate: 115200
+
+log:
+  link: latest_log
+  dir: log
+  level: info

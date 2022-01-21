@@ -2,3 +2,8 @@ common:
   client_id: TRTX012155000100
   addr: 192.168.1.139
   port: 7080
+
+log:
+  link: latest_log
+  dir: log
+  level: info
