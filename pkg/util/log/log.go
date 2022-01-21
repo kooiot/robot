@@ -10,16 +10,16 @@ import (
 var Log *zap.Logger
 
 type LogConf struct {
-	Link  string `yaml:"link" json:"link"`
-	Dir   string `yaml:"dir" json:"dir"`
-	Level string `yaml:"level" json:"level"`
+	Filename string `yaml:"filename" json:"filename"`
+	Dir      string `yaml:"dir" json:"dir"`
+	Level    string `yaml:"level" json:"level"`
 }
 
 func init() {
 }
 
 func InitLog(conf LogConf) {
-	Log = CreateLogger(conf.Dir, conf.Link, conf.Level, "console", "LowercaseColorLevelEncoder", true)
+	Log = CreateLogger(conf.Dir, conf.Filename, conf.Level, "console", "LowercaseColorLevelEncoder", true)
 }
 
 // wrap log

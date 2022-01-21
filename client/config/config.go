@@ -36,9 +36,9 @@ func GetDefaultClientConf() ClientConf {
 			System:   "UNKNOWN",
 		},
 		Log: log.LogConf{
-			Link:  "latest_log",
-			Dir:   "log",
-			Level: "info",
+			Filename: "client.log",
+			Dir:      "log",
+			Level:    "info",
 		},
 	}
 }

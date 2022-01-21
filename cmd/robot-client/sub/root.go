@@ -22,7 +22,7 @@ var (
 	serverAddr string
 	clientID   string
 	logLevel   string
-	logLink    string
+	logName    string
 	logDir     string
 )
 
@@ -38,7 +38,7 @@ func RegisterCommonFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&serverAddr, "server_addr", "s", "", "robot server's address")
 	cmd.PersistentFlags().StringVarP(&clientID, "client_id", "", "", "robot client id")
 	cmd.PersistentFlags().StringVarP(&logLevel, "log_level", "", "", "log level")
-	cmd.PersistentFlags().StringVarP(&logLink, "log_link", "", "", "latest log file link")
+	cmd.PersistentFlags().StringVarP(&logName, "log_name", "", "", "log file name")
 	cmd.PersistentFlags().StringVarP(&logDir, "log_dir", "", "", "log file folder")
 }
 
@@ -95,8 +95,8 @@ func runClient(cfgFilePath string) error {
 	if len(logDir) > 0 {
 		cfg.Log.Dir = logDir
 	}
-	if len(logLink) > 0 {
-		cfg.Log.Link = logLink
+	if len(logName) > 0 {
+		cfg.Log.Filename = logName
 	}
 	if len(logLevel) > 0 {
 		cfg.Log.Level = logLevel

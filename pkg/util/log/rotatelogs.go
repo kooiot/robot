@@ -1,24 +1,31 @@
-//go:build !windows
-// +build !windows
-
 package log
 
 import (
 	"os"
 	"path"
-	"time"
 
-	zaprotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	"go.uber.org/zap/zapcore"
 )
 
-func GetWriteSyncer(log_dir string, link_name string, log_in_console bool) (zapcore.WriteSyncer, error) {
-	fileWriter, err := zaprotatelogs.New(
-		path.Join(log_dir, "%Y-%m-%d.log"),
-		zaprotatelogs.WithLinkName(link_name),
-		zaprotatelogs.WithMaxAge(7*24*time.Hour),
-		zaprotatelogs.WithRotationTime(24*time.Hour),
-	)
+func GetWriteSyncer(log_dir string, filename string, log_in_console bool) (zapcore.WriteSyncer, error) {
+	// lumberjack.Logger is already safe for concurrent use, so we don't need to
+	// lock it.
+	log_filename := path.Join(log_dir, filename)
+	pwd, err := os.Getwd()
+	if !path.IsAbs(log_filename) {
+		log_filename = path.Join(pwd, log_filename)
+	}
+	fileWriter := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   log_filename,
+		MaxSize:    10, // megabytes
+		MaxBackups: 3,
+		MaxAge:     1, // days
+		LocalTime:  true,
+		Compress:   true,
+	})
+
 	if log_in_console {
 		return zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(fileWriter)), err
 	}

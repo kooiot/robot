@@ -20,9 +20,9 @@ type PongServerConf struct {
 func GetDefaultServerConf() PongServerConf {
 	return PongServerConf{
 		Log: log.LogConf{
-			Link:  "latest_log",
-			Dir:   "log",
-			Level: "info",
+			Filename: "pong.log",
+			Dir:      "log",
+			Level:    "info",
 		},
 	}
 }

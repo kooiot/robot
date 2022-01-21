@@ -11,8 +11,8 @@ import (
 
 var level zapcore.Level
 
-func CreateLogger(log_dir string, link_name string, log_level string, format string, encode_level string, log_in_console bool) (logger *zap.Logger) {
-	fmt.Printf("dir %s link %s level %s\n", log_dir, link_name, log_level)
+func CreateLogger(log_dir string, filename string, log_level string, format string, encode_level string, log_in_console bool) (logger *zap.Logger) {
+	fmt.Printf("dir %s log %s level %s\n", log_dir, filename, log_level)
 	if ok, _ := PathExists(log_dir); !ok { // 判断是否有文件夹
 		fmt.Printf("create %v directory\n", log_dir)
 		_ = os.Mkdir(log_dir, os.ModePerm)
@@ -39,9 +39,9 @@ func CreateLogger(log_dir string, link_name string, log_level string, format str
 
 	// if level == zap.DebugLevel || level == zap.ErrorLevel {
 	if level == zap.ErrorLevel {
-		logger = zap.New(getEncoderCore(log_dir, link_name, format, encode_level, log_in_console), zap.AddStacktrace(level))
+		logger = zap.New(getEncoderCore(log_dir, filename, format, encode_level, log_in_console), zap.AddStacktrace(level))
 	} else {
-		logger = zap.New(getEncoderCore(log_dir, link_name, format, encode_level, log_in_console))
+		logger = zap.New(getEncoderCore(log_dir, filename, format, encode_level, log_in_console))
 	}
 	// if config.TUN_CFG.Zap.ShowLine {
 	// 	logger = logger.WithOptions(zap.AddCaller())
@@ -88,8 +88,8 @@ func getEncoder(format string, encode_level string) zapcore.Encoder {
 }
 
 // getEncoderCore 获取Encoder的zapcore.Core
-func getEncoderCore(log_dir string, link_name string, format string, encode_level string, log_in_console bool) (core zapcore.Core) {
-	writer, err := GetWriteSyncer(log_dir, link_name, log_in_console) // 使用file-rotatelogs进行日志分割
+func getEncoderCore(log_dir string, filename string, format string, encode_level string, log_in_console bool) (core zapcore.Core) {
+	writer, err := GetWriteSyncer(log_dir, filename, log_in_console) // 使用file-rotatelogs进行日志分割
 	if err != nil {
 		fmt.Printf("Get Write Syncer Failed err:%v", err.Error())
 		return

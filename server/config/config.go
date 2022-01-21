@@ -42,9 +42,9 @@ func GetDefaultServerConf() ServerConf {
 			Port: 7080,
 		},
 		Log: log.LogConf{
-			Link:  "latest_log",
-			Dir:   "log",
-			Level: "info",
+			Filename: "server.log",
+			Dir:      "log",
+			Level:    "info",
 		},
 	}
 }
