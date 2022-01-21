@@ -68,6 +68,15 @@ func runClient(cfgFilePath string) error {
 	if err != nil {
 		return err
 	}
+	cfg.Log.Dir = logDir
+	cfg.Log.Link = logLink
+	cfg.Log.Level = logLevel
+
+	cfg.Complete()
+	if err = cfg.Validate(); err != nil {
+		err = fmt.Errorf("parse config error: %v", err)
+		return err
+	}
 	return startService(cfg, cfgFilePath)
 }
 

@@ -3,11 +3,6 @@ common:
   port: 7080
   loops: 0
 
-log:
-  link: latest_log
-  dir: log
-  level: info
-
 tasks:
   folder: autos
   output: .

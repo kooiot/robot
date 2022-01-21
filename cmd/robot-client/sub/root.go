@@ -2,7 +2,9 @@ package sub
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"strconv"
 
 	"github.com/kooiot/robot/client"
 	"github.com/kooiot/robot/client/config"
@@ -18,9 +20,7 @@ var (
 	showVersion bool
 
 	serverAddr string
-	user       string
-	protocol   string
-	token      string
+	clientID   string
 	logLevel   string
 	logLink    string
 	logDir     string
@@ -36,9 +36,7 @@ func init() {
 
 func RegisterCommonFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&serverAddr, "server_addr", "s", "127.0.0.1:7000", "robot server's address")
-	cmd.PersistentFlags().StringVarP(&protocol, "protocol", "p", "tcp", "tcp or kcp")
-	cmd.PersistentFlags().StringVarP(&user, "user", "u", "", "user")
-	cmd.PersistentFlags().StringVarP(&token, "token", "t", "", "auth token")
+	cmd.PersistentFlags().StringVarP(&clientID, "client_id", "", "", "robot client id")
 	cmd.PersistentFlags().StringVarP(&logLevel, "log_level", "", "info", "log level")
 	cmd.PersistentFlags().StringVarP(&logLink, "log_link", "", "latest_log", "latest log file link")
 	cmd.PersistentFlags().StringVarP(&logDir, "log_dir", "", "log", "log file folder")
@@ -77,6 +75,33 @@ func runClient(cfgFilePath string) error {
 	if err != nil {
 		return err
 	}
+	if len(serverAddr) > 0 {
+		ipStr, portStr, err := net.SplitHostPort(serverAddr)
+		if err != nil {
+			err = fmt.Errorf("invalid server_addr: %v", err)
+			return err
+		}
+
+		cfg.Common.Addr = ipStr
+		cfg.Common.Port, err = strconv.Atoi(portStr)
+		if err != nil {
+			err = fmt.Errorf("invalid server_addr: %v", err)
+			return err
+		}
+	}
+	if len(clientID) > 0 {
+		cfg.Common.ClientID = clientID
+	}
+	cfg.Log.Dir = logDir
+	cfg.Log.Link = logLink
+	cfg.Log.Level = logLevel
+
+	cfg.Complete()
+	if err = cfg.Validate(); err != nil {
+		err = fmt.Errorf("parse config error: %v", err)
+		return err
+	}
+
 	return startService(cfg, cfgFilePath)
 }
 
