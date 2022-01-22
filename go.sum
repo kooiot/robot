@@ -44,6 +44,8 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/Allenxuxu/eviop v0.0.0-20190901123806-035c218f739a/go.mod h1:I5+IvzRy5ddv0t9uiuUf4LsfJOXczEb9rxSuPWFfE0w=
+github.com/Allenxuxu/gev v0.3.1-0.20220122020815-9262fa12b35a h1:XlDBzZgk/3sfYjHVWJ4QpLNBHxtKFIwYADvuSuxRydM=
+github.com/Allenxuxu/gev v0.3.1-0.20220122020815-9262fa12b35a/go.mod h1:eM6UgX9+UttS77jtXxxtuoype6utFqDbiC+URLcRbnQ=
 github.com/Allenxuxu/ringbuffer v0.0.0-20190803184500-fa400f2fe92b/go.mod h1:9Rg4D7ixiHGlU50BJWJEg6vwDFcGiOYKQFcHK6Vx9m4=
 github.com/Allenxuxu/ringbuffer v0.0.11 h1:51J/QakUlldfRBeKFAy81PD0IunxOQehvoBG/EvWT7k=
 github.com/Allenxuxu/ringbuffer v0.0.11/go.mod h1:F2Ela+/miJmKYwnXr3X0+spOmSEwL/iFAEzeUJ4SFMI=
@@ -224,8 +226,6 @@ github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E
 github.com/kavu/go_reuseport v1.4.0/go.mod h1:CG8Ee7ceMFSMnx/xr25Vm0qXaj2Z4i5PWoUx+JZ5/CU=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/kooiot/gev v0.3.1-0.20220121071430-3e7c75272c11 h1:eOsnVzIzUoUHJnvt3BlVlfpm1eBALIB+xkzuyGem3sM=
-github.com/kooiot/gev v0.3.1-0.20220121071430-3e7c75272c11/go.mod h1:eM6UgX9+UttS77jtXxxtuoype6utFqDbiC+URLcRbnQ=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0 h1:s5hAObm+yFO5uHYt5dYjxi2rXrsnmRpJx4OYvIWUaQs=
