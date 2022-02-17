@@ -1,0 +1,15 @@
+[Unit]
+Description=Robot server service
+After=network.target local-fs.target
+
+[Service]
+WorkingDirectory=<source folder>/conf/robot-server
+ExecStart=<source folder>/bin/robot-server
+Type=simple
+Restart=on-failure
+RestartSec=5
+TasksMax=infinity
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
