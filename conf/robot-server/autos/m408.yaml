@@ -1,0 +1,41 @@
+tasks:
+  - 
+    id: com1_com2_test
+    task: serial
+    desc: serial test com1 com2
+    option:
+      src: /dev/ttyS1
+      dst: /dev/ttyS2
+      baudrate: 115200
+      count: 100
+      max_msg_size: 500
+  - 
+    id: com3_com4_test
+    task: serial
+    desc: serial test com3 com4
+    option:
+      src: /dev/ttyS3
+      dst: /dev/ttyS4
+      baudrate: 9600
+      count: 100
+      max_msg_size: 500
+  - 
+    id: com5_com6_test
+    task: serial
+    desc: serial test com5 com6
+    option:
+      src: /dev/ttyS5
+      dst: /dev/ttyS6
+      baudrate: 57600
+      count: 100
+      max_msg_size: 500
+  - 
+    id: com7_com8_test
+    task: serial
+    desc: serial test com7 com8
+    option:
+      src: /dev/ttyS7
+      dst: /dev/ttyS8
+      baudrate: 57600
+      count: 100
+      max_msg_size: 500

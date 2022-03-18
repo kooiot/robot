@@ -36,3 +36,15 @@ tasks:
         -
           key: client_id
           match: TRTK01.+
+    -
+      config: m408.yaml
+      matches:
+        -
+          key: client_id
+          match: DLYM01.+
+    -
+      config: m416.yaml
+      matches:
+        -
+          key: client_id
+          match: DLYM02.+
