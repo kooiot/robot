@@ -14,6 +14,22 @@ tasks:
       init:
         - "ifconfig eth1 192.168.2.248"
   - 
+    id: eth2_ping
+    task: ethernet
+    desc: ETH2 ping test
+    option:
+      ping_addr: 192.168.3.139
+      init:
+        - "ifconfig eth1 192.168.3.248"
+  - 
+    id: eth3_ping
+    task: ethernet
+    desc: ETH3 ping test
+    option:
+      ping_addr: 192.168.4.139
+      init:
+        - "ifconfig eth1 192.168.4.248"
+  - 
     id: com1_com2_test
     task: serial
     desc: serial test com1 com2
@@ -50,7 +66,17 @@ tasks:
     option:
       src: /dev/ttyS7
       dst: /dev/ttyS8
-      baudrate: 115200
+      baudrate: 57600
+      count: 100
+      max_msg_size: 500
+  - 
+    id: com9_com10_test
+    task: serial
+    desc: serial test com9 com10
+    option:
+      src: /dev/ttyS9
+      dst: /dev/ttyS10
+      baudrate: 57600
       count: 100
       max_msg_size: 500
   - 
@@ -65,8 +91,10 @@ tasks:
     desc: Test LEDS
     option:
       leds:
-        - "green:cloud"
-        - "green:modem"
+        - "kooiot:green:gs"
+        - "kooiot:green:bs"
+        - "kooiot:green:cloud"
+        - "kooiot:green:modem"
       count: 50
       span: 200
   -
@@ -75,6 +103,8 @@ tasks:
     desc: Test done
     option:
       leds:
-        - "green:cloud"
-        - "green:modem"
+        - "kooiot:green:gs"
+        - "kooiot:green:bs"
+        - "kooiot:green:cloud"
+        - "kooiot:green:modem"
       halt: true

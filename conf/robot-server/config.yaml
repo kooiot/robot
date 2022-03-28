@@ -37,6 +37,12 @@ tasks:
           key: client_id
           match: TRTK01.+
     -
+      config: k2.yaml
+      matches:
+        -
+          key: client_id
+          match: TRTK02.+
+    -
       config: m408.yaml
       matches:
         -

@@ -1,5 +1,35 @@
 tasks:
   - 
+    id: eth0_ping
+    task: ethernet
+    desc: ETH0 ping test
+    option:
+      ping_addr: 192.168.1.139
+  - 
+    id: eth1_ping
+    task: ethernet
+    desc: ETH1 ping test
+    option:
+      ping_addr: 192.168.2.139
+      init:
+        - "ifconfig eth1 192.168.2.248"
+  - 
+    id: eth2_ping
+    task: ethernet
+    desc: ETH2 ping test
+    option:
+      ping_addr: 192.168.3.139
+      init:
+        - "ifconfig eth1 192.168.3.248"
+  - 
+    id: eth3_ping
+    task: ethernet
+    desc: ETH3 ping test
+    option:
+      ping_addr: 192.168.4.139
+      init:
+        - "ifconfig eth1 192.168.4.248"
+  - 
     id: com1_com2_test
     task: serial
     desc: serial test com1 com2
@@ -16,7 +46,7 @@ tasks:
     option:
       src: /dev/ttyS3
       dst: /dev/ttyS4
-      baudrate: 9600
+      baudrate: 57600
       count: 100
       max_msg_size: 500
   - 
@@ -39,3 +69,26 @@ tasks:
       baudrate: 57600
       count: 100
       max_msg_size: 500
+  - 
+    id: rtc_rx8010_test
+    task: rtc
+    desc: RTC chip test
+    option:
+      file: /dev/rtc0
+  -
+    id: leds_test
+    task: leds
+    desc: Test LEDS
+    option:
+      leds:
+        - "green:modem"
+      count: 50
+      span: 200
+  -
+    id: done
+    task: done
+    desc: Test done
+    option:
+      leds:
+        - "green:modem"
+      halt: true
