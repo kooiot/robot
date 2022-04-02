@@ -81,6 +81,7 @@ type LedsTask struct {
 }
 
 type DoneTask struct {
-	Leds []string `mapstructure:"leds" json:"leds"`
-	Halt bool     `mapstructure:"halt" json:"halt"`
+	Leds     []string `mapstructure:"leds" json:"leds"`
+	GPIOLeds []string `mapstructure:"gpio_leds" json:"gpio_leds"`
+	Halt     bool     `mapstructure:"halt" json:"halt"`
 }

@@ -62,12 +62,14 @@ func (s *USBTask) hasNoIds() (bool, error) {
 }
 
 func (s *USBTask) Run() (interface{}, error) {
+	xl := xlog.FromContextSafe(s.ctx)
 	time.Sleep(3 * time.Second)
 	ret, err := s.hasIds()
 	if !ret {
 		return nil, err
 	}
 	if len(s.config.Reset) > 0 {
+		xl.Info("USB test reset gpio")
 		// Test reset
 		reset := hardware.NewNamedGPIO(s.config.Reset)
 
@@ -108,6 +110,7 @@ func (s *USBTask) Run() (interface{}, error) {
 		}
 	}
 	if len(s.config.Power) > 0 {
+		xl.Info("USB test power gpio")
 		// Test reset
 		power := hardware.NewNamedGPIO(s.config.Power)
 
@@ -145,6 +148,7 @@ func (s *USBTask) Run() (interface{}, error) {
 			return nil, errors.New("usb power up failed, error:" + err.Error())
 		}
 	}
+	xl.Info("USB test done!")
 	return "Done", nil
 }
 

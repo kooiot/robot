@@ -26,18 +26,28 @@ func init() {
 
 func (s *DoneTask) Blink() {
 	leds := []*hardware.NamedLed{}
+	gpios := []*hardware.NamedGPIO{}
 	for _, name := range s.config.Leds {
 		leds = append(leds, hardware.NewNamedLed(name))
+	}
+	for _, name := range s.config.GPIOLeds {
+		gpios = append(gpios, hardware.NewNamedGPIO(name))
 	}
 	// Blink the LEDs
 	for {
 		for _, led := range leds {
 			led.Set(255)
 		}
+		for _, gpio := range gpios {
+			gpio.Set(1)
+		}
 
 		time.Sleep(200 * time.Millisecond)
 		for _, led := range leds {
 			led.Set(0)
+		}
+		for _, gpio := range gpios {
+			gpio.Set(0)
 		}
 
 		time.Sleep(200 * time.Millisecond)

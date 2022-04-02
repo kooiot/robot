@@ -40,7 +40,7 @@ func (s *ModemTask) Run() (interface{}, error) {
 	}
 	pinger.Count = 3
 
-	xl.Debug("Modem task start ping")
+	xl.Info("Modem task start ping")
 	// pinger.SetPrivileged(true)
 	// pinger.SetNetwork("ip4")
 	err = pinger.Run() // Blocks until finished.

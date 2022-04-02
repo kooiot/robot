@@ -14,7 +14,7 @@ tasks:
     task: modem
     desc: 4G modem
     option:
-      ping_addr: 8.8.8.8
+      ping_addr: 114.114.114.114
       usb:
         ids:
           - "2c7c:0125"

@@ -54,3 +54,39 @@ tasks:
         -
           key: client_id
           match: DLYM02.+
+    -
+      config: f204_h.yaml
+      matches:
+        -
+          key: client_id
+          match: 2-31107.+
+    -
+      config: f204.yaml
+      matches:
+        -
+          key: client_id
+          match: 2-31106.+
+    -
+      config: f208_h.yaml
+      matches:
+        -
+          key: client_id
+          match: 2-31104.+
+    -
+      config: f208.yaml
+      matches:
+        -
+          key: client_id
+          match: 2-31103.+
+    -
+      config: f202_h.yaml
+      matches:
+        -
+          key: client_id
+          match: 2-31101.+
+    -
+      config: f202.yaml
+      matches:
+        -
+          key: client_id
+          match: 2-31100.+

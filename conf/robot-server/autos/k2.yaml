@@ -80,6 +80,17 @@ tasks:
       count: 100
       max_msg_size: 500
   - 
+    id: pcie_modem_test
+    task: modem
+    desc: 4G modem
+    option:
+      ping_addr: 114.114.114.114
+      usb:
+        ids:
+          - "2c7c:0125"
+        reset: "pcie_reset"
+        power: "pcie_power"
+  - 
     id: rtc_rx8010_test
     task: rtc
     desc: RTC chip test
@@ -91,8 +102,8 @@ tasks:
     desc: Test LEDS
     option:
       leds:
-        - "kooiot:green:gs"
-        - "kooiot:green:bs"
+        - "kooiot:green:csq"
+        - "kooiot:green:status"
         - "kooiot:green:cloud"
         - "kooiot:green:modem"
       count: 50
@@ -103,8 +114,8 @@ tasks:
     desc: Test done
     option:
       leds:
-        - "kooiot:green:gs"
-        - "kooiot:green:bs"
+        - "kooiot:green:csq"
+        - "kooiot:green:status"
         - "kooiot:green:cloud"
         - "kooiot:green:modem"
       halt: true
