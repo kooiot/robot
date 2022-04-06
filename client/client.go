@@ -240,6 +240,14 @@ func (c *Client) SendTaskUpdate(task *msg.Task) error {
 	return c.send_message("task.update", task)
 }
 
+func (c *Client) PrintDone() {
+	xl := c.xl
+
+	for i := 0; i < 3; i++ {
+		xl.Debug("ClientID: %s\r\n", c.config.Common.ClientID)
+	}
+}
+
 func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 	xl := c.xl
 	msgType := ctx.(string)

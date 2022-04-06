@@ -51,6 +51,7 @@ type TaskHandler interface {
 }
 
 type Reporter interface {
+	PrintDone()
 	SendResult(*msg.TaskResult) error
 	SendTaskUpdate(*msg.Task) error
 }

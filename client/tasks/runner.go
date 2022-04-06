@@ -293,6 +293,10 @@ func (r *Runner) Halt() error {
 	return nil
 }
 
+func (r *Runner) PrintDone() {
+	r.reporter.PrintDone()
+}
+
 func (r *Runner) ReportResult(info *TaskInfo) error {
 	r.reporter.SendResult(&msg.TaskResult{
 		Task:   info.Info,

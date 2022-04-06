@@ -72,8 +72,12 @@ func (s *DoneTask) Run() (interface{}, error) {
 	// Wait for other tasks
 	err := s.handler.Wait(s.parent, func(task common.Task, result msg.TaskResultDetail) {
 		xl.Info("done got result: %#v", result)
+
 		if result.Result {
 			r := s.handler.(*Runner)
+
+			r.PrintDone()
+
 			if r != nil && s.config.Halt {
 				r.Halt()
 			} else {
