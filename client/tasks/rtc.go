@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os/exec"
 	"time"
 
@@ -25,32 +26,46 @@ func init() {
 
 func (t *RTCTask) Run() (interface{}, error) {
 	xl := xlog.FromContextSafe(t.ctx)
-	cmd := "hwclock -w"
-	if len(t.config.File) > 0 {
-		cmd += " -f " + t.config.File
-	}
-	xl.Debug("Run: %s", cmd)
-	err := exec.Command("sh", "-c", cmd).Run()
-	if err != nil {
-		return nil, err
+
+	var err_return error = nil
+	// try three times
+	for i := 0; i < 3; i++ {
+		cmd := "hwclock -w"
+		if len(t.config.File) > 0 {
+			cmd += " -f " + t.config.File
+		}
+		xl.Debug("Run: %s", cmd)
+		err := exec.Command("sh", "-c", cmd).Run()
+		if err != nil {
+			err_return = err
+			break
+		}
+
+		time.Sleep(10 * time.Second)
+		cmd = "hwclock -r"
+		if len(t.config.File) > 0 {
+			cmd += " -f " + t.config.File
+		}
+		xl.Debug("Run: %s", cmd)
+		out, err := exec.Command("sh", "-c", cmd).Output()
+		if err != nil {
+			err_return = err
+			break
+		}
+		time_len := len(time.ANSIC)
+		rtc_now, _ := time.Parse(time.ANSIC, string(out[:time_len]))
+
+		diff := time.Since(rtc_now)
+		if diff < time.Second {
+			err_return = nil
+			break
+		}
+		time.Sleep(3 * time.Second)
+		err_return = errors.New(fmt.Sprintf("failed, diff: %s tried: %d", diff.String(), i))
 	}
 
-	time.Sleep(10 * time.Second)
-	cmd = "hwclock -r"
-	if len(t.config.File) > 0 {
-		cmd += " -f " + t.config.File
-	}
-	xl.Debug("Run: %s", cmd)
-	out, err := exec.Command("sh", "-c", cmd).Output()
-	if err != nil {
-		return nil, err
-	}
-	time_len := len(time.ANSIC)
-	rtc_now, _ := time.Parse(time.ANSIC, string(out[:time_len]))
-
-	diff := time.Since(rtc_now)
-	if diff > time.Second {
-		return nil, errors.New("failed, diff:" + diff.String())
+	if err_return != nil {
+		return nil, err_return
 	} else {
 		return "Done", nil
 	}
