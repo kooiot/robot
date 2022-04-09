@@ -244,7 +244,7 @@ func (c *Client) PrintDone() {
 	xl := c.xl
 
 	for i := 0; i < 3; i++ {
-		xl.Debug("ClientID: %s\r\n", c.config.Common.ClientID)
+		xl.Info("ClientID: %s\r\n", c.config.Common.ClientID)
 	}
 }
 
