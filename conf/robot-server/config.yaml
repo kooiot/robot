@@ -8,6 +8,12 @@ log:
   level: debug
   filename: server.log
 
+api:
+  enable: false
+  static: static
+  bind: 0.0.0.0
+  port: 8780
+
 tasks:
   folder: autos
   output: .

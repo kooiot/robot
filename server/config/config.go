@@ -28,10 +28,18 @@ type AutoTasks struct {
 	Autos  []AutoConfig `mapstructure:"autos" json:"autos"`
 }
 
+type HttpApiConf struct {
+	Enable bool   `mapstructure:"enable" json:"enable"`
+	Static string `mapstructure:"static" json:"static"`
+	Bind   string `mapstructure:"bind" json:"bind"`
+	Port   int    `mapstructure:"port" json:"port"`
+}
+
 type ServerConf struct {
 	Common CommonConf  `mapstructure:"common" json:"common"`
 	Log    log.LogConf `mapstructure:"log" json:"log"`
 	Tasks  AutoTasks   `mapstructure:"tasks" json:"tasks"`
+	Api    HttpApiConf `mapstructure:"api" json:"api"`
 }
 
 // GetDefaultServerConf returns a client configuration with default values.

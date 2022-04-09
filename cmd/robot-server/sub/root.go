@@ -9,6 +9,7 @@ import (
 	"github.com/kooiot/robot/pkg/util/log"
 	"github.com/kooiot/robot/pkg/util/version"
 	"github.com/kooiot/robot/server"
+	"github.com/kooiot/robot/server/api"
 	"github.com/kooiot/robot/server/config"
 
 	"github.com/spf13/cobra"
@@ -105,17 +106,34 @@ func runServer(cfgFilePath string) error {
 	return startService(cfg, cfgFilePath)
 }
 
-func startService(cfg config.ServerConf, cfgFile string) (err error) {
-	log.InitLog(cfg.Log)
+func runRobotServer(cfg *config.ServerConf) error {
+	svr := server.NewServer(cfg, cfgFile)
 
-	svr := server.NewServer(&cfg, cfgFile)
-
-	err = svr.Init()
+	err := svr.Init()
 	if err != nil {
-		return
+		log.Error(err.Error())
+		return err
 	}
 
 	err = svr.Run()
+	log.Error(err.Error())
+	return err
+}
 
-	return
+func startService(cfg config.ServerConf, cfgFile string) (err error) {
+	log.InitLog(cfg.Log)
+
+	if !cfg.Api.Enable {
+		return runRobotServer(&cfg)
+	} else {
+		go func() {
+			err := runRobotServer(&cfg)
+			log.Error(err.Error())
+		}()
+
+		// Run HTTP API Server
+		err = api.RunServer(&cfg.Api)
+		log.Error(err.Error())
+		return err
+	}
 }
