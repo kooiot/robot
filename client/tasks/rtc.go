@@ -29,7 +29,7 @@ func (t *RTCTask) Run() (interface{}, error) {
 
 	var err_return error = nil
 	// try three times
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 7; i++ {
 		cmd := "hwclock -w"
 		if len(t.config.File) > 0 {
 			cmd += " -f " + t.config.File
