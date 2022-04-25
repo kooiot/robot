@@ -54,6 +54,12 @@ func GetDefaultServerConf() ServerConf {
 			Dir:      "log",
 			Level:    "info",
 		},
+		Api: HttpApiConf{
+			Enable: true,
+			Static: "static",
+			Bind:   "0.0.0.0",
+			Port:   8780,
+		},
 	}
 }
 
