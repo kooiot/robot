@@ -15,6 +15,7 @@ import (
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/net/protocol"
 	"github.com/kooiot/robot/pkg/util/xlog"
+	"github.com/kooiot/robot/server/api"
 	"github.com/kooiot/robot/server/common"
 	"github.com/kooiot/robot/server/config"
 	"github.com/kooiot/robot/server/tasks"
@@ -105,7 +106,13 @@ func (s *Server) handle_login(c *gev.Connection, req *msg.Login) interface{} {
 	s.clients[req.ClientID] = client
 	s.clients_lock.Unlock()
 
-	s.client_task_store.Open(req.ClientID)
+	info := &common.ClientData{
+		ID:     client_id,
+		Info:   *req,
+		Online: time.Now().Format("2006-01-02 15:04:05"),
+		Status: "Login",
+	}
+	s.client_task_store.Open(req.ClientID, info)
 
 	s.send_message(c, "login.resp", &msg.LoginResp{
 		ClientID: req.ClientID,
@@ -320,7 +327,13 @@ func (s *Server) Init() error {
 	s.client_task_store = tasks.NewTaskStore(s.ctx, output_path)
 	s.client_task_store.Start()
 
+	api.G_Stats = s.client_task_store.GetStats()
+
 	return nil
+}
+
+func (s *Server) GetStats() *tasks.ResultStats {
+	return s.client_task_store.GetStats()
 }
 
 func (s *Server) Close() {

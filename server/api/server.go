@@ -6,7 +6,10 @@ import (
 
 	"github.com/fvbock/endless"
 	"github.com/kooiot/robot/server/config"
+	"github.com/kooiot/robot/server/tasks"
 )
+
+var G_Stats *tasks.ResultStats = nil
 
 func RunServer(cfg *config.HttpApiConf) error {
 	router := Routers(cfg)

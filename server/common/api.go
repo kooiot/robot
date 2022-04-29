@@ -1,5 +1,9 @@
 package common
 
+import (
+	"github.com/kooiot/robot/pkg/net/msg"
+)
+
 type LoginReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -48,12 +52,13 @@ type Menu struct {
 }
 
 type RunResult struct {
+	Hour    string `json:"hour"`
 	Success uint32 `json:"success"`
 	Fail    uint32 `json:"fail"`
 }
 
 type OnlineData struct {
-	Hour  uint32 `json:"hour"`
+	Hour  string `json:"hour"`
 	Count uint32 `json:"count"`
 }
 
@@ -61,6 +66,25 @@ type ErrorData struct {
 	ID    uint32 `json:"id"`
 	Name  string `json:"name"`
 	Count uint32 `json:"count"`
+}
+type ErrorStatsData struct {
+	Name  string `json:"name"`
+	Count uint32 `json:"count"`
+}
+
+type DetailQuery struct {
+	ID int32 `json:"id"`
+}
+
+type InfoQuery struct {
+	ClientID string `json:"client_id"`
+}
+
+type ClientData struct {
+	ID     int32     `json:"id"`
+	Info   msg.Login `json:"info"`
+	Online string    `json:"online"`
+	Status string    `json:"status"`
 }
 
 type TestStatus struct {
@@ -77,12 +101,13 @@ type ServerStatus struct {
 }
 
 type RobotStats struct {
-	UpdateTime   string       `json:"update_time"`
-	RunToday     []RunResult  `json:"run_today"`
-	ClientActive []RunResult  `json:"client_active"`
-	OrderSource  []RunResult  `json:"order_source"`
-	ClientLevel  []RunResult  `json:"client_level"`
-	ErrorTop     []ErrorData  `json:"error_top"`
-	TestStatus   TestStatus   `json:"test_status"`
-	ServerStatus ServerStatus `json:"server_status"`
+	UpdateTime   string           `json:"update_time"`
+	Clients      []ClientData     `json:"clients"`
+	RunToday     []RunResult      `json:"run_today"`
+	ClientActive []RunResult      `json:"client_active"`
+	ErrorTop     []ErrorData      `json:"error_top"`
+	ErrorStats   []ErrorStatsData `json:"error_stats"`
+	ClientLevel  []RunResult      `json:"client_level"`
+	TestStatus   TestStatus       `json:"test_status"`
+	ServerStatus ServerStatus     `json:"server_status"`
 }

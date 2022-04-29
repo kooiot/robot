@@ -11,6 +11,7 @@ type Client struct {
 	ID            int32
 	Info          *msg.Login
 	Conn          *gev.Connection
+	Online        time.Time
 	LastHeartbeat time.Time
 }
 
@@ -19,6 +20,7 @@ func NewClient(id int32, conn *gev.Connection, login *msg.Login) *Client {
 		ID:            id,
 		Info:          login,
 		Conn:          conn,
+		Online:        time.Now(),
 		LastHeartbeat: time.Now(),
 	}
 }

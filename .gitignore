@@ -18,4 +18,5 @@ conf/robot-pong/robot-pong
 *.swp
 latest_log
 *.log
+*.log.gz
 

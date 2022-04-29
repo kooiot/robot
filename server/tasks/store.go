@@ -15,6 +15,7 @@ import (
 	"github.com/kooiot/robot/pkg/net/msg"
 	"github.com/kooiot/robot/pkg/util/shutdown"
 	"github.com/kooiot/robot/pkg/util/xlog"
+	"github.com/kooiot/robot/server/common"
 )
 
 type TaskStoreMsgType int32
@@ -33,9 +34,10 @@ type TaskStoreMsg struct {
 }
 
 type TaskStoreInfo struct {
-	ClientID string
-	Output   string
-	Tasks    []msg.TaskResult
+	ID       int32            `json:"id"`
+	ClientID string           `json:"client_id"`
+	Output   string           `json:"output"`
+	Tasks    []msg.TaskResult `json:"tasks"`
 }
 
 type TaskStore struct {
@@ -50,6 +52,8 @@ type TaskStore struct {
 	output_dir string
 
 	clients map[string]*TaskStoreInfo
+
+	stats ResultStats
 
 	msg_chn         chan TaskStoreMsg
 	worker_shutdown *shutdown.Shutdown
@@ -117,7 +121,7 @@ func (t *TaskStore) worker() {
 	for m := range t.msg_chn {
 		switch m.Type {
 		case MSG_OPEN:
-			t._Open(m.ClientID)
+			t._Open(m.ClientID, m.Msg.(*common.ClientData))
 		case MSG_CLOSE:
 			t._Close(m.ClientID, m.Msg.(error))
 		case MSG_UPDATE:
@@ -129,6 +133,7 @@ func (t *TaskStore) worker() {
 }
 
 func (t *TaskStore) Start() {
+	t.stats.Init()
 	go t.worker()
 }
 
@@ -138,23 +143,27 @@ func (t *TaskStore) Stop() {
 	t.worker_shutdown.WaitDone()
 }
 
-func (t *TaskStore) Open(client_id string) {
+func (t *TaskStore) Open(client_id string, info *common.ClientData) {
 	t.msg_chn <- TaskStoreMsg{
 		Type:     MSG_OPEN,
 		ClientID: client_id,
+		Msg:      info,
 	}
 }
 
-func (t *TaskStore) _Open(client_id string) {
+func (t *TaskStore) _Open(client_id string, info *common.ClientData) {
 	xl := t.xl
 	now := strconv.FormatInt(time.Now().Unix(), 10)
 	output_path := path.Join(t.output_dir, client_id+"_"+now+".json")
 	xl.Info("Task result save to: %s", output_path)
 	t.clients[client_id] = &TaskStoreInfo{
+		ID:       info.ID,
 		ClientID: client_id,
 		Output:   output_path,
 	}
 	t.onOpen(client_id)
+
+	t.stats.onOpen(client_id, info)
 }
 
 func (t *TaskStore) Close(client_id string, err error) {
@@ -170,11 +179,15 @@ func (t *TaskStore) _Close(client_id string, err error) {
 	info, ok := t.clients[client_id]
 	if !ok {
 		xl.Error("task for client:%d missing", client_id)
+		return
 	}
+
 	defer delete(t.clients, client_id)
 
 	t.dump_tasks(info)
 	t.onClose(client_id, err)
+
+	t.stats.onClose(client_id, err)
 }
 
 func (t *TaskStore) TaskUpdate(client_id string, task *msg.Task) {
@@ -190,12 +203,15 @@ func (t *TaskStore) _TaskUpdate(client_id string, task *msg.Task) {
 	info, ok := t.clients[client_id]
 	if !ok {
 		xl.Error("task for client:%d missing", client_id)
+		return
 	}
+
 	for i, v := range info.Tasks {
 		if v.Task.UUID == task.UUID {
 			info.Tasks[i].Task = *task
 			t.dump_tasks(info)
 			t.onTaskUpdate(client_id, task)
+			t.stats.UpdateClient(client_id, info)
 			return
 		}
 	}
@@ -206,6 +222,7 @@ func (t *TaskStore) _TaskUpdate(client_id string, task *msg.Task) {
 
 	t.dump_tasks(info)
 	t.onTaskInsert(client_id, task)
+	t.stats.UpdateClient(client_id, info)
 }
 
 func (t *TaskStore) TaskResult(client_id string, result *msg.TaskResult) {
@@ -221,17 +238,28 @@ func (t *TaskStore) _TaskResult(client_id string, result *msg.TaskResult) {
 	info, ok := t.clients[client_id]
 	if !ok {
 		xl.Error("task for client:%d missing", client_id)
+		return
 	}
+
 	for i, v := range info.Tasks {
 		if v.Task.UUID == result.Task.UUID {
 			info.Tasks[i] = *result
 			t.dump_tasks(info)
+			t.stats.onTaskResult(client_id, result)
+
 			t.onTaskUpdate(client_id, &result.Task)
 			t.onTaskFinish(client_id, result)
+
+			t.stats.onTaskResult(client_id, result)
+			t.stats.UpdateClient(client_id, info)
 			return
 		}
 	}
 	t.xl.Error("task not found for result: %#v", result)
+}
+
+func (t *TaskStore) GetStats() *ResultStats {
+	return &t.stats
 }
 
 func NewTaskStore(ctx context.Context, output string) *TaskStore {
@@ -242,6 +270,7 @@ func NewTaskStore(ctx context.Context, output string) *TaskStore {
 		clients:         make(map[string]*TaskStoreInfo),
 		worker_shutdown: shutdown.New(),
 		output_dir:      output,
+		stats:           *NewResultStats(ctx, output, 60),
 	}
 
 	store.OnOpen(func(client_id string) {})

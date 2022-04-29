@@ -37,9 +37,6 @@ tasks:
     desc: Test LEDS
     option:
       leds:
-        - "kooiot:green:gs"
-        - "kooiot:green:bs"
-        - "kooiot:green:cloud"
         - "kooiot:green:modem"
       count: 50
       span: 200
@@ -49,8 +46,6 @@ tasks:
     desc: Test done
     option:
       leds:
-        - "kooiot:green:gs"
-        - "kooiot:green:bs"
-        - "kooiot:green:cloud"
         - "kooiot:green:modem"
+        - "kooiot:green:status"
       halt: true
