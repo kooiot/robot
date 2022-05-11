@@ -12,7 +12,7 @@ import (
 func Routers(conf *config.HttpApiConf) *gin.Engine {
 	var Router = gin.Default()
 	// Router.StaticFS("/", http.Dir(conf.Static)) // 静态地址
-	Router.Use(static.Serve("/", static.LocalFile("static", false)))
+	Router.Use(static.Serve("/", static.LocalFile(conf.Static, false)))
 	// 方便统一添加路由组前缀 多服务器上线使用
 
 	PublicGroup := Router.Group("api")
