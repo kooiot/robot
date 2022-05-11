@@ -8,6 +8,7 @@ require (
 	github.com/Allenxuxu/toolkit v0.0.1
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/fvbock/endless v0.0.0-20170109170031-447134032cb6
+	github.com/gin-contrib/static v0.0.1 // indirect
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-ping/ping v0.0.0-20211014180314-6e2b003bffdd
 	github.com/gobwas/pool v0.2.1

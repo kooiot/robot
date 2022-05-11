@@ -9,6 +9,7 @@ output/
 .idea/
 
 conf/robot-server/robot-server
+conf/robot-server/static
 conf/robot-client/robot-client
 conf/robot-pong/robot-pong
 
