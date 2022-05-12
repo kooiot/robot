@@ -8,6 +8,10 @@ import (
 	"github.com/kooiot/robot/server/config"
 )
 
+func IndexToAdmin(c *gin.Context) {
+	c.Redirect(http.StatusFound, "/admin")
+}
+
 // 初始化总路由
 
 func Routers(conf *config.HttpApiConf) *gin.Engine {
@@ -18,6 +22,7 @@ func Routers(conf *config.HttpApiConf) *gin.Engine {
 	// Router.Use(static.Serve("/", static.LocalFile(conf.Static, false)))
 	// 方便统一添加路由组前缀 多服务器上线使用
 
+	Router.GET("/", IndexToAdmin)
 	PublicGroup := Router.Group("api")
 	{
 		baseRouter.InitPublicRouter(PublicGroup)
