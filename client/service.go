@@ -17,8 +17,9 @@ type Service struct {
 	config *config.ClientConf
 
 	// Client
-	client      *Client
-	client_lock sync.RWMutex
+	client        *Client
+	client_lock   sync.RWMutex
+	connected_chn chan interface{}
 
 	exit uint32 // 0 means not exit
 }
@@ -29,7 +30,7 @@ func (s *Service) Run() error {
 	s.client_lock.Lock()
 	s.client = client
 	s.client_lock.Unlock()
-	go client.Run()
+	go client.Start(&s.connected_chn)
 
 	go s.keepWorking()
 
@@ -45,7 +46,7 @@ func (s *Service) keepWorking() {
 
 	for {
 		select {
-		case <-s.client.ConnectedChn():
+		case <-s.connected_chn:
 			delayTime = time.Second
 		case <-s.client.ClosedDoneChn():
 			time.Sleep(delayTime)
@@ -65,7 +66,7 @@ func (s *Service) keepWorking() {
 			s.client = client
 			s.client_lock.Unlock()
 
-			client.Run()
+			client.Start(&s.connected_chn)
 		}
 	}
 }
@@ -78,14 +79,19 @@ func (s *Service) Close() {
 	s.cancel()
 }
 
+func (s *Service) ConnectedChn() <-chan interface{} {
+	return s.connected_chn
+}
+
 func NewService(cfg *config.ClientConf) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cli := &Service{
-		config: cfg,
-		ctx:    xlog.NewContext(ctx, xlog.New()),
-		cancel: cancel,
-		exit:   0,
+		config:        cfg,
+		ctx:           xlog.NewContext(ctx, xlog.New()),
+		cancel:        cancel,
+		exit:          0,
+		connected_chn: make(chan interface{}),
 	}
 
 	return cli

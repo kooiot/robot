@@ -34,8 +34,9 @@ type Client struct {
 	closed_chn chan struct{}
 	// closing done event
 	closed_done_chn chan struct{}
-	// connection ready event
-	connected_chn chan struct{}
+
+	// connected chan
+	connected_chn *chan interface{}
 
 	// Task Runner
 	runner *tasks.Runner
@@ -82,7 +83,8 @@ func (c *Client) newConn() (*Connection, error) {
 	return conn, nil
 }
 
-func (c *Client) Run() error {
+func (c *Client) Start(connected_chn *chan interface{}) error {
+	c.connected_chn = connected_chn
 	conn, err := c.newConn()
 	if err != nil {
 		return err
@@ -261,7 +263,7 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 		}
 		xl.Debug("%s: %#v", msgType, req)
 		c.client_id = req.ID
-		close(c.connected_chn)
+		*c.connected_chn <- c
 	case "logout.resp":
 		req := msg.Response{}
 		if err := json.Unmarshal(data, &req); err != nil {
@@ -289,10 +291,6 @@ func (c *Client) OnMessage(ctx interface{}, data []byte) (out interface{}) {
 	return nil
 }
 
-func (c *Client) ConnectedChn() <-chan struct{} {
-	return c.connected_chn
-}
-
 func (c *Client) ClosedDoneChn() <-chan struct{} {
 	return c.closed_done_chn
 }
@@ -312,7 +310,6 @@ func NewClient(cfg *config.ClientConf, ctx context.Context) *Client {
 		read_chn:           make(chan *msg.Message, 100),
 		closed_chn:         make(chan struct{}),
 		closed_done_chn:    make(chan struct{}),
-		connected_chn:      make(chan struct{}),
 		readerShutdown:     shutdown.New(),
 		writerShutdown:     shutdown.New(),
 		msgHandlerShutdown: shutdown.New(),
